@@ -1,0 +1,1321 @@
+<title>Lançamentos AVANTE</title>
+
+<style>
+  :root {
+    --ink: #1B2A2E;
+    --ink-soft: #4B5D60;
+    --paper: #F1EFE8;
+    --paper-raised: #FFFFFF;
+    --line: #DAD5C8;
+    --accent: #1F6F63;
+    --accent-soft: #E4EFEC;
+    --accent-ink: #0F3F38;
+    --gold: #B8842E;
+    --gold-soft: #F5E9D3;
+    --good: #2E7D4F;
+    --good-soft: #E3F1E7;
+    --bad: #A6432E;
+    --bad-soft: #F6E6E1;
+    --shadow: 0 1px 2px rgba(27,42,46,0.06), 0 6px 20px -8px rgba(27,42,46,0.18);
+    --radius: 10px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ink: #ECE9E1;
+      --ink-soft: #A9B6B4;
+      --paper: #14201E;
+      --paper-raised: #1B2A28;
+      --line: #2C3D3A;
+      --accent: #4FB3A0;
+      --accent-soft: #1E3632;
+      --accent-ink: #BFE9DD;
+      --gold: #E0AE5C;
+      --gold-soft: #35301F;
+      --good: #6FCB93;
+      --good-soft: #1C3327;
+      --bad: #E08A73;
+      --bad-soft: #3A241F;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 10px 28px -10px rgba(0,0,0,0.55);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ink: #ECE9E1;
+    --ink-soft: #A9B6B4;
+    --paper: #14201E;
+    --paper-raised: #1B2A28;
+    --line: #2C3D3A;
+    --accent: #4FB3A0;
+    --accent-soft: #1E3632;
+    --accent-ink: #BFE9DD;
+    --gold: #E0AE5C;
+    --gold-soft: #35301F;
+    --good: #6FCB93;
+    --good-soft: #1C3327;
+    --bad: #E08A73;
+    --bad-soft: #3A241F;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 10px 28px -10px rgba(0,0,0,0.55);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Public Sans", -apple-system, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    padding: clamp(16px, 4vw, 40px);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+  }
+
+  h1, h2, h3 { font-family: "Sora", "Public Sans", sans-serif; letter-spacing: -0.01em; text-wrap: balance; margin: 0; }
+  .mono, .num { font-family: "IBM Plex Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+
+  .shell { max-width: 1180px; margin: 0 auto; }
+
+  .topbar {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 22px;
+    flex-wrap: wrap;
+  }
+  .brand { display: flex; flex-direction: column; gap: 6px; }
+  .brand .eyebrow {
+    font-size: 11.5px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase;
+    color: var(--accent); font-family: "Sora", sans-serif;
+  }
+  .brand-row { display: flex; align-items: center; gap: 12px; }
+  .brand-logo {
+    width: 42px; height: 42px; border-radius: 10px; object-fit: cover;
+    background: #FFFFFF; border: 1px solid var(--line); box-shadow: var(--shadow);
+    flex: none;
+  }
+  .brand h1 { font-size: clamp(22px, 3vw, 28px); font-weight: 650; color: var(--ink); }
+  .topbar-right { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+  .toolbar { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+  .clock { font-size: 13px; color: var(--ink-soft); font-family: "IBM Plex Mono", monospace; }
+
+  .toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(12px);
+    background: var(--ink); color: var(--paper);
+    font-family: "Sora", sans-serif; font-size: 13px; font-weight: 600;
+    padding: 10px 18px; border-radius: 8px; box-shadow: var(--shadow);
+    opacity: 0; pointer-events: none; transition: opacity 0.2s ease, transform 0.2s ease;
+    z-index: 80; max-width: min(420px, 88vw); text-align: center;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1.35fr);
+    gap: 20px;
+    align-items: start;
+  }
+  .layout[hidden] { display: none; }
+  @media (max-width: 880px) {
+    .layout { grid-template-columns: 1fr; }
+  }
+
+  .card {
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 22px;
+  }
+  .stack { display: flex; flex-direction: column; gap: 18px; }
+
+  /* Saldo tile */
+  .balance-card {
+    background: linear-gradient(155deg, var(--accent-ink) 0%, var(--accent) 130%);
+    color: #F3FBF8;
+    border: none;
+  }
+  :root[data-theme="dark"] .balance-card,
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .balance-card { color: #EAFBF5; } }
+  .balance-card .label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.85; font-family: "Sora", sans-serif; font-weight: 600; }
+  .balance-card .amount { font-size: clamp(30px, 4.2vw, 42px); font-weight: 650; margin-top: 6px; font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
+  .balance-card .sub { font-size: 12.5px; opacity: 0.8; margin-top: 8px; }
+  .balance-breakdown { display: flex; gap: 22px; margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.22); }
+  .balance-breakdown div span { display: block; }
+  .balance-breakdown .bl { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; opacity: 0.75; margin-bottom: 3px; }
+  .balance-breakdown .bv { font-family: "IBM Plex Mono", monospace; font-size: 15px; font-weight: 600; }
+  .despesa-card { background: linear-gradient(155deg, #6B2A20 0%, var(--bad) 130%); }
+
+  /* Tabs Recebimentos / Despesas */
+  .view-tabs { display: flex; gap: 6px; margin-bottom: 18px; }
+  .tab-btn {
+    font-family: "Sora", sans-serif; font-weight: 600; font-size: 13.5px;
+    padding: 9px 16px; border-radius: 8px; border: 1px solid var(--line);
+    background: var(--paper-raised); color: var(--ink-soft); cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .tab-btn.active { background: var(--accent); color: #F3FBF8; border-color: var(--accent); }
+  .tab-btn:not(.active):hover { background: var(--accent-soft); color: var(--ink); }
+
+  /* Form */
+  h2.section-title { font-size: 15.5px; font-weight: 650; margin-bottom: 2px; }
+  .section-hint { font-size: 12.5px; color: var(--ink-soft); margin-bottom: 14px; }
+
+  form { display: grid; gap: 13px; }
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field label { font-size: 12px; font-weight: 600; color: var(--ink-soft); font-family: "Sora", sans-serif; letter-spacing: 0.01em; }
+  .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  @media (max-width: 520px) { .row-2, .row-3 { grid-template-columns: 1fr; } }
+
+  input, textarea, select {
+    font: inherit;
+    font-family: "Public Sans", sans-serif;
+    font-size: 14.5px;
+    padding: 9px 11px;
+    border-radius: 7px;
+    border: 1px solid var(--line);
+    background: var(--paper);
+    color: var(--ink);
+    width: 100%;
+  }
+  input[type="number"], input.mono-input { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
+  input:focus, textarea:focus, select:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+    border-color: var(--accent);
+  }
+  textarea { resize: vertical; min-height: 46px; }
+
+  .money-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .money-field { position: relative; }
+  .money-field input { padding-left: 30px; }
+  .money-field::before {
+    content: "R$";
+    position: absolute; left: 11px; top: 32px;
+    font-size: 12.5px; color: var(--ink-soft); font-family: "IBM Plex Mono", monospace;
+    pointer-events: none;
+  }
+  .money-field.credito::before { color: var(--good); }
+  .money-field.debito::before { color: var(--bad); }
+
+  .total-readout {
+    padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line);
+    background: rgba(46, 140, 110, 0.08); color: var(--good);
+    font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums;
+    font-size: 16px; font-weight: 650;
+  }
+
+  button.submit {
+    margin-top: 4px;
+    font-family: "Sora", sans-serif;
+    font-weight: 650;
+    font-size: 14.5px;
+    padding: 12px 18px;
+    border-radius: 8px;
+    border: none;
+    background: var(--accent);
+    color: #F3FBF8;
+    cursor: pointer;
+    transition: filter 0.15s ease, transform 0.05s ease;
+  }
+  button.submit:hover { filter: brightness(1.07); }
+  button.submit:active { transform: translateY(1px); }
+  button.submit:disabled { opacity: 0.55; cursor: not-allowed; }
+  button.submit.debito-submit { background: var(--bad); }
+
+  .form-msg { font-size: 12.5px; min-height: 16px; }
+  .form-msg.error { color: var(--bad); }
+  .form-msg.ok { color: var(--good); }
+
+  /* Recent table */
+  .table-scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; min-width: 640px; }
+  thead th {
+    text-align: left;
+    font-family: "Sora", sans-serif;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-soft);
+    font-weight: 650;
+    padding: 0 10px 8px;
+    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+  }
+  tbody td {
+    padding: 10px;
+    border-bottom: 1px solid var(--line);
+    font-size: 13.5px;
+    vertical-align: top;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  td.name { font-weight: 600; }
+  td.sub { color: var(--ink-soft); font-size: 12px; margin-top: 1px; display: block; }
+  td.val { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  td.val.credito { color: var(--good); }
+  td.val.debito { color: var(--bad); }
+  .empty-state { padding: 28px 8px; text-align: center; color: var(--ink-soft); font-size: 13.5px; }
+
+  .sync-error {
+    margin: 0 20px 12px; padding: 12px 16px; border-radius: 10px;
+    background: rgba(200, 60, 60, 0.12); border: 1px solid rgba(200, 60, 60, 0.35);
+    color: var(--bad); font-size: 13px; line-height: 1.5;
+  }
+  .sync-error strong { display: block; margin-bottom: 2px; }
+
+  .pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: "Sora", sans-serif;
+    font-size: 11px; font-weight: 650;
+    padding: 3px 9px; border-radius: 99px;
+    white-space: nowrap;
+  }
+  .pill.pending { background: var(--gold-soft); color: var(--gold); }
+  .pill.synced { background: var(--good-soft); color: var(--good); }
+  .pill .dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+
+  .sync-note {
+    font-size: 12px; color: var(--ink-soft); margin-top: 12px;
+    padding-top: 12px; border-top: 1px dashed var(--line);
+  }
+  .sync-note strong { color: var(--ink); }
+
+  footer { margin-top: 26px; font-size: 12px; color: var(--ink-soft); text-align: center; }
+
+  /* Row actions */
+  .row-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+  .btn-chip {
+    font-family: "Sora", sans-serif;
+    font-size: 11.5px; font-weight: 650;
+    padding: 6px 10px; border-radius: 6px;
+    border: 1px solid var(--line);
+    background: var(--paper-raised);
+    color: var(--ink);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: filter 0.15s ease;
+  }
+  .btn-chip:hover { filter: brightness(0.97); background: var(--accent-soft); border-color: var(--accent); color: var(--accent-ink); }
+  .btn-chip.edit-chip:hover { background: var(--gold-soft); border-color: var(--gold); color: var(--gold); }
+  .btn-chip.delete-chip:hover { background: var(--bad-soft); border-color: var(--bad); color: var(--bad); }
+
+  .edit-banner {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    background: var(--gold-soft); color: var(--gold);
+    border: 1px solid var(--gold);
+    border-radius: 7px; padding: 8px 12px; font-size: 12.5px; font-weight: 600;
+    font-family: "Sora", sans-serif;
+  }
+  .edit-banner button {
+    font-family: "Sora", sans-serif; font-size: 11.5px; font-weight: 650;
+    background: transparent; border: 1px solid currentColor; color: inherit;
+    border-radius: 6px; padding: 4px 9px; cursor: pointer;
+  }
+
+  /* Receipt modal */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(15, 22, 20, 0.55);
+    display: flex; align-items: flex-start; justify-content: center;
+    padding: 4vh 16px; overflow-y: auto; z-index: 50;
+  }
+  .modal-overlay[hidden] { display: none; }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin: 0 0 14px; }
+  .modal-actions button {
+    font-family: "Sora", sans-serif; font-weight: 650; font-size: 13px;
+    padding: 9px 16px; border-radius: 7px; cursor: pointer; border: 1px solid var(--line);
+  }
+  .modal-actions .print-btn { background: var(--accent); color: #F3FBF8; border: none; }
+  .modal-actions .close-btn { background: var(--paper-raised); color: var(--ink); }
+
+  .receipt-wrap { width: min(640px, 100%); }
+  .receipt {
+    background: #FFFFFF; color: #1B1B1B;
+    border: 2px solid #1B1B1B; border-radius: 6px;
+    padding: 18px 22px 20px; font-family: "Public Sans", sans-serif;
+    box-shadow: var(--shadow);
+  }
+  .receipt-head { display: flex; align-items: center; gap: 12px; border-bottom: 2px solid #1B1B1B; padding-bottom: 10px; margin-bottom: 12px; }
+  .receipt-head img { width: 58px; height: 58px; border-radius: 8px; object-fit: cover; flex: none; }
+  .receipt-head .school-name { font-family: "Sora", sans-serif; font-weight: 700; font-size: 16px; }
+  .receipt-head .school-sub { font-size: 9.5px; line-height: 1.45; color: #333; }
+  .receipt-title-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; flex-wrap: wrap; gap: 8px; }
+  .receipt-title-row .recibo-word { font-family: "Sora", sans-serif; font-weight: 700; font-size: 20px; border: 2px solid #1B1B1B; border-radius: 8px; padding: 4px 14px; }
+  .receipt-num { font-size: 13px; display: flex; align-items: center; gap: 6px; }
+  .receipt-num input { width: 64px; font-family: "IBM Plex Mono", monospace; font-size: 14px; border: none; border-bottom: 1.5px solid #1B1B1B; text-align: center; color: #A6432E; font-weight: 700; background: transparent; }
+  .receipt-num-value { font-family: "IBM Plex Mono", monospace; font-size: 14px; color: #A6432E; font-weight: 700; }
+  .receipt-amount-box { font-family: "IBM Plex Mono", monospace; font-weight: 700; font-size: 16px; border: 1.5px solid #1B1B1B; border-radius: 6px; padding: 4px 12px; }
+  .receipt-line { font-size: 13.5px; margin: 10px 0; line-height: 1.5; }
+  .receipt-line .fill { border-bottom: 1px solid #1B1B1B; display: inline-block; min-width: 60%; padding: 0 4px 1px; font-weight: 600; }
+  .receipt-line label { color: #333; margin-right: 4px; }
+  .receipt-extenso-box { border: 1.5px solid #1B1B1B; border-radius: 6px; padding: 8px 12px; font-size: 13px; font-style: italic; margin: 8px 0 12px; min-height: 20px; }
+  .receipt-signature { margin-top: 30px; text-align: center; }
+  .receipt-signature .sig-line { border-top: 1px solid #1B1B1B; width: 70%; margin: 0 auto 6px; }
+  .receipt-signature .sig-label { font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; color: #333; }
+
+  @media print {
+    body * { visibility: hidden; }
+    .receipt-print-area, .receipt-print-area * { visibility: visible; }
+    .receipt-print-area { position: absolute; top: 0; left: 0; width: 100%; padding: 0; margin: 0; }
+    .modal-overlay { position: static; background: none; padding: 0; }
+    .no-print { display: none !important; }
+    .receipt { border-width: 1.5px; box-shadow: none; }
+  }
+</style>
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;650;700&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<div class="shell">
+  <div class="topbar">
+    <div class="brand">
+      <span class="eyebrow">Escola AVANTE · Financeiro</span>
+      <div class="brand-row">
+        <img class="brand-logo" src="data:image/jpeg;base64,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" alt="Logo Avante Centro Educacional">
+        <h1>Lançamentos de recebimento</h1>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="toolbar">
+        <button type="button" class="btn-chip" id="open-sheet-btn">Abrir planilha ↗</button>
+        <button type="button" class="btn-chip" id="sync-link-btn">Atualizar dados</button>
+      </div>
+      <div class="clock" id="clock"></div>
+    </div>
+  </div>
+
+  <div class="view-tabs">
+    <button type="button" class="tab-btn active" id="tab-recebimentos">Recebimentos</button>
+    <button type="button" class="tab-btn" id="tab-despesas">Despesas</button>
+  </div>
+
+  <div class="sync-error" id="sync-error" hidden></div>
+
+  <div class="layout" id="view-recebimentos">
+    <div class="stack">
+      <div class="card balance-card">
+        <div class="label">Saldo atual</div>
+        <div class="amount" id="balance-amount">R$ 0,00</div>
+        <div class="sub" id="balance-sub"></div>
+        <div class="balance-breakdown">
+          <div><span class="bl">Créditos lançados</span><span class="bv" id="sum-credito">R$ 0,00</span></div>
+          <div><span class="bl">Débitos lançados</span><span class="bv" id="sum-debito">R$ 0,00</span></div>
+          <div><span class="bl">Pendentes de sync</span><span class="bv" id="pending-count">0</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="section-title">Novo lançamento</h2>
+        <p class="section-hint">Selecione o aluno — o responsável preenche sozinho, mas pode ser trocado.</p>
+        <form id="entry-form" autocomplete="off">
+          <div class="row-2">
+            <div class="field">
+              <label for="f-data">Data</label>
+              <input type="date" id="f-data" min="2026-09-01" required>
+            </div>
+            <div class="field">
+              <label for="f-nome">Nome do aluno</label>
+              <input list="dl-alunos" id="f-nome" placeholder="Comece a digitar…" required>
+              <datalist id="dl-alunos"></datalist>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="f-responsavel">Responsável</label>
+            <input list="dl-responsaveis" id="f-responsavel" placeholder="Preenche ao escolher o aluno">
+            <datalist id="dl-responsaveis"></datalist>
+          </div>
+
+          <div class="field">
+            <label for="f-obs">Observação</label>
+            <textarea id="f-obs" placeholder="Ex.: Mens. Setembro + parcela apostila"></textarea>
+          </div>
+
+          <div class="row-3">
+            <div class="field money-field">
+              <label for="f-mensalidade">Mensalidade</label>
+              <input type="number" step="0.01" min="0" id="f-mensalidade" placeholder="0,00">
+            </div>
+            <div class="field money-field">
+              <label for="f-taxa">Apostila</label>
+              <input type="number" step="0.01" min="0" id="f-taxa" placeholder="0,00">
+            </div>
+            <div class="field money-field">
+              <label for="f-outros">Outros recebimentos</label>
+              <input type="number" step="0.01" min="0" id="f-outros" placeholder="0,00">
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Total do lançamento (crédito)</label>
+            <div class="total-readout" id="f-credito-total">R$ 0,00</div>
+          </div>
+
+          <div class="edit-banner" id="edit-banner" hidden>
+            <span id="edit-banner-text">Editando lançamento</span>
+            <button type="button" id="cancel-edit-btn">Cancelar edição</button>
+          </div>
+
+          <button type="submit" class="submit" id="submit-btn">Lançar</button>
+          <div class="form-msg" id="form-msg" role="status"></div>
+        </form>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 class="section-title">Últimos 10 lançamentos</h2>
+      <p class="section-hint">Vem direto da planilha — atualiza sozinho a cada minuto.</p>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Aluno / Responsável</th>
+              <th>Crédito</th>
+              <th>Débito</th>
+              <th>Status</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="recent-body"></tbody>
+        </table>
+      </div>
+      <div class="empty-state" id="empty-state" hidden>Nenhum lançamento ainda. Use o formulário ao lado.</div>
+      <div class="sync-note">
+        <strong>Como funciona:</strong> esta página não guarda nada em si mesma — a planilha do Google Sheets é a
+        única fonte de dados. Ao abrir a página (ou a cada minuto), ela busca o saldo, a lista de alunos e os últimos
+        lançamentos direto da planilha. Cada lançamento novo, edição ou exclusão é enviado na hora; se a internet
+        falhar no envio, você recebe um aviso na tela para tentar de novo.
+      </div>
+    </div>
+  </div>
+
+  <div class="layout" id="view-despesas" hidden>
+    <div class="stack">
+      <div class="card balance-card despesa-card">
+        <div class="label">Total de despesas do mês</div>
+        <div class="amount" id="despesa-amount">R$ 0,00</div>
+        <div class="sub" id="despesa-sub"></div>
+      </div>
+
+      <div class="card">
+        <h2 class="section-title">Nova despesa</h2>
+        <p class="section-hint">Escolha o fornecedor da lista ou digite um novo — ele entra no cadastro automaticamente.</p>
+        <form id="despesa-form" autocomplete="off">
+          <div class="row-2">
+            <div class="field">
+              <label for="d-data">Data</label>
+              <input type="date" id="d-data" min="2026-09-01" required>
+            </div>
+            <div class="field">
+              <label for="d-fornecedor">Fornecedor</label>
+              <input list="dl-fornecedores" id="d-fornecedor" placeholder="Comece a digitar…" required>
+              <datalist id="dl-fornecedores"></datalist>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="d-descricao">Categoria / Descrição</label>
+            <textarea id="d-descricao" placeholder="Ex.: Aluguel de setembro, material de limpeza…"></textarea>
+          </div>
+
+          <div class="row-2">
+            <div class="field">
+              <label for="d-forma">Forma de pagamento</label>
+              <select id="d-forma">
+                <option value="">Selecione…</option>
+                <option value="Pix">Pix</option>
+                <option value="Dinheiro">Dinheiro</option>
+                <option value="Boleto">Boleto</option>
+                <option value="Cartão">Cartão</option>
+                <option value="Transferência">Transferência</option>
+                <option value="Outro">Outro</option>
+              </select>
+            </div>
+            <div class="field money-field debito">
+              <label for="d-valor">Valor</label>
+              <input type="number" step="0.01" min="0" id="d-valor" placeholder="0,00" required>
+            </div>
+          </div>
+
+          <div class="edit-banner" id="despesa-edit-banner" hidden>
+            <span id="despesa-edit-banner-text">Editando despesa</span>
+            <button type="button" id="despesa-cancel-edit-btn">Cancelar edição</button>
+          </div>
+
+          <button type="submit" class="submit debito-submit" id="despesa-submit-btn">Lançar despesa</button>
+          <div class="form-msg" id="despesa-form-msg" role="status"></div>
+        </form>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 class="section-title">Últimas 10 despesas</h2>
+      <p class="section-hint">Vem direto da planilha — atualiza sozinho a cada minuto.</p>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Fornecedor / Descrição</th>
+              <th>Forma</th>
+              <th>Valor</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="despesa-recent-body"></tbody>
+        </table>
+      </div>
+      <div class="empty-state" id="despesa-empty-state" hidden>Nenhuma despesa ainda. Use o formulário ao lado.</div>
+      <div class="sync-note">
+        <strong>Como funciona:</strong> igual ao lado de recebimentos — cada despesa lançada vai direto para a
+        mesma aba do mês (ex.: SETEMBRO2026), somando junto com os recebimentos no saldo, sem guardar nada nesta página.
+      </div>
+    </div>
+  </div>
+
+  <footer>Escola AVANTE — controle financeiro · dados salvos na planilha</footer>
+</div>
+
+<div class="toast no-print" id="toast"></div>
+
+<div class="modal-overlay no-print" id="receipt-overlay" hidden>
+  <div class="receipt-wrap">
+    <div class="modal-actions no-print">
+      <button type="button" class="close-btn" id="receipt-close-btn">Fechar</button>
+      <button type="button" class="print-btn" id="receipt-print-btn">Imprimir</button>
+    </div>
+    <div class="receipt-print-area">
+      <div class="receipt" id="receipt-body"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwwKDnD8Lp7TW_IFgzRv2RhPQOb4JShTE-v-vLne2anLVNVwqYKkOsEKSNQFZVv4A/exec';
+  var GOOGLE_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1igAUYTWQNXwaxECD0ctF1yeUF5kedMTFbSVQhHTrFhk/edit';
+  var AUTO_REFRESH_MS = 60000;
+
+  var state = {
+    students: [],
+    respMap: {},
+    responsibles: [],
+    recentes: [],
+    saldoAtual: { mesNome: '', credito: 0, debito: 0, saldo: 0 },
+    fornecedores: [],
+    fornecedorObsMap: {},
+    despesasAtual: { mesNome: '', total: 0 },
+    despesasRecentes: [],
+    carregado: false
+  };
+
+  function fmtMoney(v) {
+    v = Number(v) || 0;
+    return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  }
+  function fmtDateBR(iso) {
+    if (!iso) return '—';
+    var parts = String(iso).split('-');
+    if (parts.length !== 3) return iso;
+    return parts[2] + '/' + parts[1] + '/' + parts[0];
+  }
+  function escapeHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c];
+    });
+  }
+
+  var MESES_EXTENSO = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+  function fmtDataExtensoEldorado(iso) {
+    if (!iso) return 'Eldorado - MS, ____ de _______________ de 20____';
+    var parts = iso.split('-');
+    if (parts.length !== 3) return 'Eldorado - MS, ____ de _______________ de 20____';
+    var dia = String(Number(parts[2]));
+    var mes = MESES_EXTENSO[Number(parts[1]) - 1] || '_______________';
+    var anoCurto = parts[0].slice(2);
+    return 'Eldorado - MS, ' + dia + ' de ' + mes + ' de 20' + anoCurto;
+  }
+
+  var UNIDADES = ['', 'um', 'dois', 'três', 'quatro', 'cinco', 'seis', 'sete', 'oito', 'nove'];
+  var DEZ_A_DEZENOVE = ['dez', 'onze', 'doze', 'treze', 'quatorze', 'quinze', 'dezesseis', 'dezessete', 'dezoito', 'dezenove'];
+  var DEZENAS = ['', '', 'vinte', 'trinta', 'quarenta', 'cinquenta', 'sessenta', 'setenta', 'oitenta', 'noventa'];
+  var CENTENAS = ['', 'cento', 'duzentos', 'trezentos', 'quatrocentos', 'quinhentos', 'seiscentos', 'setecentos', 'oitocentos', 'novecentos'];
+
+  function trescentosExtenso(n) {
+    if (n === 0) return '';
+    if (n === 100) return 'cem';
+    var c = Math.floor(n / 100), r = n % 100;
+    var parts = [];
+    if (c) parts.push(CENTENAS[c]);
+    if (r) {
+      if (r < 10) parts.push(UNIDADES[r]);
+      else if (r < 20) parts.push(DEZ_A_DEZENOVE[r - 10]);
+      else {
+        var d = Math.floor(r / 10), u = r % 10;
+        parts.push(u ? DEZENAS[d] + ' e ' + UNIDADES[u] : DEZENAS[d]);
+      }
+    }
+    return parts.join(' e ');
+  }
+
+  function numeroPorExtenso(n) {
+    n = Math.floor(n);
+    if (n === 0) return 'zero';
+    var milhoes = Math.floor(n / 1000000);
+    var milhares = Math.floor((n % 1000000) / 1000);
+    var resto = n % 1000;
+    var parts = [];
+    if (milhoes) parts.push(trescentosExtenso(milhoes) + (milhoes === 1 ? ' milhão' : ' milhões'));
+    if (milhares) parts.push(milhares === 1 ? 'mil' : trescentosExtenso(milhares) + ' mil');
+    if (resto) parts.push(trescentosExtenso(resto));
+    return parts.join(' e ');
+  }
+
+  function valorPorExtenso(valor) {
+    valor = Math.round((Number(valor) || 0) * 100) / 100;
+    var inteiro = Math.floor(valor);
+    var centavos = Math.round((valor - inteiro) * 100);
+    var txt = numeroPorExtenso(inteiro) + (inteiro === 1 ? ' real' : ' reais');
+    if (centavos > 0) {
+      txt += ' e ' + numeroPorExtenso(centavos) + (centavos === 1 ? ' centavo' : ' centavos');
+    }
+    txt = txt.charAt(0).toUpperCase() + txt.slice(1);
+    return txt;
+  }
+
+  var DATA_INICIO_LANCAMENTOS = '2026-09-01'; // lançamentos começam a partir desta data
+
+  function todayISO() {
+    var d = new Date();
+    var m = String(d.getMonth() + 1).padStart(2, '0');
+    var day = String(d.getDate()).padStart(2, '0');
+    var iso = d.getFullYear() + '-' + m + '-' + day;
+    return iso < DATA_INICIO_LANCAMENTOS ? DATA_INICIO_LANCAMENTOS : iso;
+  }
+
+  // ---------------------------------------------------------------------
+  // Comunicação com o Web App (Google Apps Script) — a planilha é a fonte
+  // única de dados. GET busca o estado; POST envia criação/edição/exclusão.
+  // ---------------------------------------------------------------------
+  // O /exec do Apps Script, quando acessado por fetch() de quem não está
+  // logado no Google, costuma cair num redirecionamento interno que devolve
+  // 404 (limitação conhecida do Apps Script, não é bug desta página). Uma
+  // tag <script> (técnica JSONP) não esbarra nisso, então é o que usamos
+  // tanto pra buscar dados (GET) quanto pra enviar lançamentos.
+  var _jsonpContador = 0;
+
+  function jsonpRequest(url, params, timeoutMs) {
+    return new Promise(function (resolve, reject) {
+      var nomeCallback = '__avanteCb' + (_jsonpContador++) + '_' + Math.random().toString(36).slice(2);
+      var script = document.createElement('script');
+      var timeoutId = setTimeout(function () {
+        limpar();
+        reject(new Error('tempo esgotado ao contatar a planilha'));
+      }, timeoutMs || 15000);
+
+      function limpar() {
+        clearTimeout(timeoutId);
+        try { delete window[nomeCallback]; } catch (e) { window[nomeCallback] = undefined; }
+        if (script.parentNode) script.parentNode.removeChild(script);
+      }
+
+      window[nomeCallback] = function (data) {
+        limpar();
+        resolve(data);
+      };
+
+      var todosParams = Object.assign({}, params, { callback: nomeCallback });
+      var qs = Object.keys(todosParams).map(function (k) {
+        var v = todosParams[k];
+        return encodeURIComponent(k) + '=' + encodeURIComponent(v == null ? '' : v);
+      }).join('&');
+
+      script.src = url + (url.indexOf('?') === -1 ? '?' : '&') + qs;
+      script.onerror = function () {
+        limpar();
+        reject(new Error('falha ao carregar o script da planilha — confira o link do App da Web'));
+      };
+      document.head.appendChild(script);
+    });
+  }
+
+  function mostrarErroSync(msg) {
+    var el = document.getElementById('sync-error');
+    if (!el) return;
+    if (!msg) { el.hidden = true; el.textContent = ''; return; }
+    el.hidden = false;
+    el.innerHTML = '<strong>Não consegui carregar os dados da planilha.</strong>' + escapeHtml(msg);
+  }
+
+  function buscarEstado() {
+    if (!WEBAPP_URL) { mostrarErroSync('link do App da Web não configurado.'); return Promise.resolve(false); }
+    return jsonpRequest(WEBAPP_URL, {}, 15000)
+      .then(function (json) {
+        if (!json || !json.ok) throw new Error((json && json.erro) || 'resposta inválida da planilha');
+        state.students = json.students || [];
+        state.respMap = json.respMap || {};
+        state.responsibles = json.responsibles || [];
+        state.recentes = json.recentes || [];
+        state.saldoAtual = json.saldoAtual || state.saldoAtual;
+        state.fornecedores = json.fornecedores || [];
+        state.fornecedorObsMap = json.fornecedorObsMap || {};
+        state.despesasAtual = json.despesasAtual || state.despesasAtual;
+        state.despesasRecentes = json.despesasRecentes || [];
+        state.carregado = true;
+        mostrarErroSync(null);
+        return true;
+      })
+      .catch(function (err) {
+        console.error('Falha ao buscar dados da planilha:', err);
+        mostrarErroSync((err && err.message) || String(err));
+        return false;
+      });
+  }
+
+  function pushToSheet(action, entry) {
+    if (!WEBAPP_URL) return Promise.resolve({ ok: false });
+    var payload = JSON.stringify({ action: action, entry: entry, id: entry.id });
+    return jsonpRequest(WEBAPP_URL, { action: action, payload: payload }, 20000)
+      .catch(function (err) { return { ok: false, erro: (err && err.message) || String(err) }; });
+  }
+
+  // ---------------------------------------------------------------------
+  // Renderização
+  // ---------------------------------------------------------------------
+  function populateLists() {
+    var dlA = document.getElementById('dl-alunos');
+    dlA.innerHTML = state.students.map(function (n) { return '<option value="' + escapeHtml(n) + '">'; }).join('');
+    var dlR = document.getElementById('dl-responsaveis');
+    dlR.innerHTML = state.responsibles.map(function (n) { return '<option value="' + escapeHtml(n) + '">'; }).join('');
+    var dlF = document.getElementById('dl-fornecedores');
+    dlF.innerHTML = state.fornecedores.map(function (n) { return '<option value="' + escapeHtml(n) + '">'; }).join('');
+  }
+
+  function renderBalance() {
+    var s = state.saldoAtual;
+    document.getElementById('balance-amount').textContent = fmtMoney(s.saldo);
+    document.getElementById('balance-sub').textContent = s.mesNome
+      ? ('Saldo de ' + s.mesNome + ' (zera a cada mês)')
+      : '';
+    document.getElementById('sum-credito').textContent = fmtMoney(s.credito);
+    document.getElementById('sum-debito').textContent = fmtMoney(s.debito);
+    document.getElementById('pending-count').textContent = state.carregado ? '0' : '—';
+  }
+
+  function renderRecent() {
+    var body = document.getElementById('recent-body');
+    var empty = document.getElementById('empty-state');
+    var lista = state.recentes;
+    if (!state.carregado) {
+      body.innerHTML = '';
+      empty.hidden = false;
+      empty.textContent = 'Carregando dados da planilha…';
+      return;
+    }
+    if (!lista.length) {
+      body.innerHTML = '';
+      empty.hidden = false;
+      empty.textContent = 'Nenhum lançamento ainda. Use o formulário ao lado.';
+      return;
+    }
+    empty.hidden = true;
+    body.innerHTML = lista.map(function (e) {
+      return '<tr>' +
+        '<td class="val">' + fmtDateBR(e.data) + '</td>' +
+        '<td><span class="name">' + escapeHtml(e.nome) + '</span>' +
+          (e.responsavel ? '<span class="sub">' + escapeHtml(e.responsavel) + '</span>' : '') +
+          (e.observacao ? '<span class="sub">' + escapeHtml(e.observacao) + '</span>' : '') +
+        '</td>' +
+        '<td class="val credito">' + (e.credito ? fmtMoney(e.credito) : '—') + '</td>' +
+        '<td class="val debito">' + (e.debito ? fmtMoney(e.debito) : '—') + '</td>' +
+        '<td><span class="pill synced"><span class="dot"></span>Na planilha</span></td>' +
+        '<td><div class="row-actions">' +
+          '<button type="button" class="btn-chip receipt-chip" data-id="' + e.id + '">Ver / imprimir</button>' +
+          '<button type="button" class="btn-chip edit-chip" data-id="' + e.id + '">Editar</button>' +
+          '<button type="button" class="btn-chip delete-chip" data-id="' + e.id + '">Excluir</button>' +
+        '</div></td>' +
+        '</tr>';
+    }).join('');
+
+    body.querySelectorAll('.receipt-chip').forEach(function (btn) {
+      btn.addEventListener('click', function () { openReceipt(btn.getAttribute('data-id')); });
+    });
+    body.querySelectorAll('.edit-chip').forEach(function (btn) {
+      btn.addEventListener('click', function () { startEdit(btn.getAttribute('data-id')); });
+    });
+    body.querySelectorAll('.delete-chip').forEach(function (btn) {
+      btn.addEventListener('click', function () { deleteEntry(btn.getAttribute('data-id')); });
+    });
+  }
+
+  function renderDespesaBalance() {
+    var d = state.despesasAtual;
+    document.getElementById('despesa-amount').textContent = fmtMoney(d.total);
+    document.getElementById('despesa-sub').textContent = d.mesNome
+      ? ('Total gasto em ' + d.mesNome + ' (zera a cada mês)')
+      : '';
+  }
+
+  function renderDespesaRecent() {
+    var body = document.getElementById('despesa-recent-body');
+    var empty = document.getElementById('despesa-empty-state');
+    var lista = state.despesasRecentes;
+    if (!state.carregado) {
+      body.innerHTML = '';
+      empty.hidden = false;
+      empty.textContent = 'Carregando dados da planilha…';
+      return;
+    }
+    if (!lista.length) {
+      body.innerHTML = '';
+      empty.hidden = false;
+      empty.textContent = 'Nenhuma despesa ainda. Use o formulário ao lado.';
+      return;
+    }
+    empty.hidden = true;
+    body.innerHTML = lista.map(function (e) {
+      return '<tr>' +
+        '<td class="val">' + fmtDateBR(e.data) + '</td>' +
+        '<td><span class="name">' + escapeHtml(e.fornecedor) + '</span>' +
+          (e.descricao ? '<span class="sub">' + escapeHtml(e.descricao) + '</span>' : '') +
+        '</td>' +
+        '<td class="val">' + (e.formaPagamento ? escapeHtml(e.formaPagamento) : '—') + '</td>' +
+        '<td class="val debito">' + (e.valor ? fmtMoney(e.valor) : '—') + '</td>' +
+        '<td><div class="row-actions">' +
+          '<button type="button" class="btn-chip despesa-edit-chip" data-id="' + e.id + '">Editar</button>' +
+          '<button type="button" class="btn-chip despesa-delete-chip" data-id="' + e.id + '">Excluir</button>' +
+        '</div></td>' +
+        '</tr>';
+    }).join('');
+
+    body.querySelectorAll('.despesa-edit-chip').forEach(function (btn) {
+      btn.addEventListener('click', function () { startEditDespesa(btn.getAttribute('data-id')); });
+    });
+    body.querySelectorAll('.despesa-delete-chip').forEach(function (btn) {
+      btn.addEventListener('click', function () { deleteDespesa(btn.getAttribute('data-id')); });
+    });
+  }
+
+  function renderAll() {
+    populateLists();
+    renderBalance();
+    renderRecent();
+    renderDespesaBalance();
+    renderDespesaRecent();
+    btnEl.disabled = !state.carregado;
+    despesaBtnEl.disabled = !state.carregado;
+  }
+
+  function refreshFromServer(showSpinnerToast) {
+    if (showSpinnerToast) showToast('Atualizando dados da planilha…');
+    return buscarEstado().then(function (ok) {
+      renderAll();
+      if (showSpinnerToast) {
+        showToast(ok ? 'Dados atualizados.' : 'Não foi possível conectar à planilha agora.');
+      } else if (!ok && !state.carregado) {
+        showToast('Não foi possível carregar os dados da planilha. Verifique sua conexão e clique em "Atualizar dados".', 7000);
+      }
+      return ok;
+    });
+  }
+
+  // ---------------------------------------------------------------------
+  // Formulário: criar / editar
+  // ---------------------------------------------------------------------
+  var msgEl = document.getElementById('form-msg');
+  var btnEl = document.getElementById('submit-btn');
+  var editBanner = document.getElementById('edit-banner');
+  var editBannerText = document.getElementById('edit-banner-text');
+  var cancelEditBtn = document.getElementById('cancel-edit-btn');
+  var editingId = null;
+
+  document.getElementById('f-nome').addEventListener('input', function (e) {
+    var val = e.target.value;
+    if (state.respMap.hasOwnProperty(val)) {
+      document.getElementById('f-responsavel').value = state.respMap[val];
+    }
+  });
+
+  function fillForm(e) {
+    document.getElementById('f-data').value = e.data || '';
+    document.getElementById('f-nome').value = e.nome || '';
+    document.getElementById('f-responsavel').value = e.responsavel || '';
+    document.getElementById('f-obs').value = e.observacao || '';
+    document.getElementById('f-taxa').value = e.taxaApostila != null ? e.taxaApostila : '';
+    document.getElementById('f-mensalidade').value = e.mensalidade != null ? e.mensalidade : '';
+    document.getElementById('f-outros').value = e.outrosRecebimentos != null ? e.outrosRecebimentos : '';
+    atualizarTotalCredito();
+  }
+
+  // Mensalidade + Apostila + Outros recebimentos somam automaticamente pro
+  // total de crédito do lançamento (não existe mais campo de crédito/débito
+  // avulso nesta parte — débito agora só entra pelo lado de despesas).
+  function calcularTotalCredito() {
+    var taxa = Number(document.getElementById('f-taxa').value) || 0;
+    var mensalidade = Number(document.getElementById('f-mensalidade').value) || 0;
+    var outros = Number(document.getElementById('f-outros').value) || 0;
+    return taxa + mensalidade + outros;
+  }
+
+  function atualizarTotalCredito() {
+    document.getElementById('f-credito-total').textContent = fmtMoney(calcularTotalCredito());
+  }
+
+  ['f-taxa', 'f-mensalidade', 'f-outros'].forEach(function (id) {
+    document.getElementById(id).addEventListener('input', atualizarTotalCredito);
+  });
+
+  function startEdit(id) {
+    var e = state.recentes.find(function (x) { return x.id === id; });
+    if (!e) return;
+    editingId = id;
+    fillForm(e);
+    editBannerText.textContent = 'Editando lançamento de ' + escapeHtml(e.nome) + ' (' + fmtDateBR(e.data) + ')';
+    editBanner.hidden = false;
+    btnEl.textContent = 'Salvar edição';
+    document.getElementById('entry-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function stopEdit() {
+    editingId = null;
+    editBanner.hidden = true;
+    btnEl.textContent = 'Lançar';
+    document.getElementById('entry-form').reset();
+    document.getElementById('f-data').value = todayISO();
+    msgEl.textContent = '';
+    msgEl.className = 'form-msg';
+    atualizarTotalCredito();
+  }
+  cancelEditBtn.addEventListener('click', stopEdit);
+
+  function deleteEntry(id) {
+    var e = state.recentes.find(function (x) { return x.id === id; });
+    if (!e) return;
+    if (!window.confirm('Excluir o lançamento de ' + e.nome + ' (' + fmtDateBR(e.data) + ')? Isso também remove o lançamento da planilha.')) return;
+
+    btnEl.disabled = true;
+    showToast('Excluindo…');
+    pushToSheet('delete', { id: id }).then(function (resultado) {
+      if (editingId === id) stopEdit();
+      if (currentReceiptId === id) closeReceipt();
+      if (resultado && resultado.ok) {
+        showToast('Lançamento removido.');
+        return refreshFromServer(false);
+      } else {
+        showToast('Não foi possível excluir agora. Tente de novo em instantes.', 6000);
+      }
+    }).finally(function () { btnEl.disabled = !state.carregado; });
+  }
+
+  document.getElementById('entry-form').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    msgEl.textContent = '';
+    msgEl.className = 'form-msg';
+
+    var data = document.getElementById('f-data').value;
+    var nome = document.getElementById('f-nome').value.trim();
+    var responsavel = document.getElementById('f-responsavel').value.trim();
+    var obs = document.getElementById('f-obs').value.trim();
+    var taxa = document.getElementById('f-taxa').value;
+    var mensalidade = document.getElementById('f-mensalidade').value;
+    var outros = document.getElementById('f-outros').value;
+    var totalCredito = calcularTotalCredito();
+
+    if (!data) { msgEl.textContent = 'Informe a data do lançamento.'; msgEl.className = 'form-msg error'; return; }
+    if (!nome) { msgEl.textContent = 'Informe o nome do aluno.'; msgEl.className = 'form-msg error'; return; }
+    if (!taxa && !mensalidade && !outros) {
+      msgEl.textContent = 'Informe ao menos um valor (mensalidade, apostila ou outros recebimentos).';
+      msgEl.className = 'form-msg error';
+      return;
+    }
+
+    var fields = {
+      data: data,
+      nome: nome,
+      responsavel: responsavel,
+      observacao: obs,
+      taxaApostila: taxa ? Number(taxa) : null,
+      mensalidade: mensalidade ? Number(mensalidade) : null,
+      outrosRecebimentos: outros ? Number(outros) : null,
+      credito: totalCredito > 0 ? totalCredito : null
+    };
+
+    btnEl.disabled = true;
+    msgEl.textContent = 'Enviando para a planilha…';
+    msgEl.className = 'form-msg';
+
+    if (editingId) {
+      var entry = Object.assign({ id: editingId }, fields);
+      pushToSheet('update', entry).then(function (resultado) {
+        if (resultado && resultado.ok) {
+          msgEl.textContent = 'Lançamento atualizado.';
+          msgEl.className = 'form-msg ok';
+          return refreshFromServer(false).then(function () { stopEdit(); });
+        } else {
+          msgEl.textContent = 'Não foi possível enviar a edição agora. Tente novamente.';
+          msgEl.className = 'form-msg error';
+        }
+      }).finally(function () { btnEl.disabled = !state.carregado; });
+      return;
+    }
+
+    var novoEntry = Object.assign({
+      id: 'e' + Date.now() + '-' + Math.random().toString(36).slice(2, 8)
+    }, fields);
+
+    pushToSheet('create', novoEntry).then(function (resultado) {
+      if (resultado && resultado.ok) {
+        msgEl.textContent = 'Lançamento salvo na planilha.';
+        msgEl.className = 'form-msg ok';
+        document.getElementById('entry-form').reset();
+        document.getElementById('f-data').value = data;
+        return refreshFromServer(false);
+      } else {
+        msgEl.textContent = 'Não foi possível enviar agora. Verifique a conexão e clique em "Lançar" de novo.';
+        msgEl.className = 'form-msg error';
+      }
+    }).finally(function () { btnEl.disabled = !state.carregado; });
+  });
+
+  // ---------------------------------------------------------------------
+  // Despesas: criar / editar / excluir
+  // ---------------------------------------------------------------------
+  var despesaMsgEl = document.getElementById('despesa-form-msg');
+  var despesaBtnEl = document.getElementById('despesa-submit-btn');
+  var despesaEditBanner = document.getElementById('despesa-edit-banner');
+  var despesaEditBannerText = document.getElementById('despesa-edit-banner-text');
+  var despesaCancelEditBtn = document.getElementById('despesa-cancel-edit-btn');
+  var editingDespesaId = null;
+
+  document.getElementById('d-fornecedor').addEventListener('input', function (e) {
+    var val = e.target.value;
+    var descEl = document.getElementById('d-descricao');
+    if (!descEl.value && state.fornecedorObsMap.hasOwnProperty(val)) {
+      descEl.value = state.fornecedorObsMap[val];
+    }
+  });
+
+  function fillDespesaForm(e) {
+    document.getElementById('d-data').value = e.data || '';
+    document.getElementById('d-fornecedor').value = e.fornecedor || '';
+    document.getElementById('d-descricao').value = e.descricao || '';
+    document.getElementById('d-forma').value = e.formaPagamento || '';
+    document.getElementById('d-valor').value = e.valor != null ? e.valor : '';
+  }
+
+  function startEditDespesa(id) {
+    var e = state.despesasRecentes.find(function (x) { return x.id === id; });
+    if (!e) return;
+    editingDespesaId = id;
+    fillDespesaForm(e);
+    despesaEditBannerText.textContent = 'Editando despesa de ' + escapeHtml(e.fornecedor) + ' (' + fmtDateBR(e.data) + ')';
+    despesaEditBanner.hidden = false;
+    despesaBtnEl.textContent = 'Salvar edição';
+    document.getElementById('despesa-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function stopEditDespesa() {
+    editingDespesaId = null;
+    despesaEditBanner.hidden = true;
+    despesaBtnEl.textContent = 'Lançar despesa';
+    document.getElementById('despesa-form').reset();
+    document.getElementById('d-data').value = todayISO();
+    despesaMsgEl.textContent = '';
+    despesaMsgEl.className = 'form-msg';
+  }
+  despesaCancelEditBtn.addEventListener('click', stopEditDespesa);
+
+  function deleteDespesa(id) {
+    var e = state.despesasRecentes.find(function (x) { return x.id === id; });
+    if (!e) return;
+    if (!window.confirm('Excluir a despesa de ' + e.fornecedor + ' (' + fmtDateBR(e.data) + ')? Isso também remove da planilha.')) return;
+
+    despesaBtnEl.disabled = true;
+    showToast('Excluindo…');
+    pushToSheet('delete_despesa', { id: id }).then(function (resultado) {
+      if (editingDespesaId === id) stopEditDespesa();
+      if (resultado && resultado.ok) {
+        showToast('Despesa removida.');
+        return refreshFromServer(false);
+      } else {
+        showToast('Não foi possível excluir agora. Tente de novo em instantes.', 6000);
+      }
+    }).finally(function () { despesaBtnEl.disabled = !state.carregado; });
+  }
+
+  document.getElementById('despesa-form').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    despesaMsgEl.textContent = '';
+    despesaMsgEl.className = 'form-msg';
+
+    var data = document.getElementById('d-data').value;
+    var fornecedor = document.getElementById('d-fornecedor').value.trim();
+    var descricao = document.getElementById('d-descricao').value.trim();
+    var formaPagamento = document.getElementById('d-forma').value;
+    var valor = document.getElementById('d-valor').value;
+
+    if (!data) { despesaMsgEl.textContent = 'Informe a data da despesa.'; despesaMsgEl.className = 'form-msg error'; return; }
+    if (!fornecedor) { despesaMsgEl.textContent = 'Informe o fornecedor.'; despesaMsgEl.className = 'form-msg error'; return; }
+    if (!valor) { despesaMsgEl.textContent = 'Informe o valor da despesa.'; despesaMsgEl.className = 'form-msg error'; return; }
+
+    var fields = {
+      data: data,
+      fornecedor: fornecedor,
+      descricao: descricao,
+      formaPagamento: formaPagamento,
+      valor: Number(valor)
+    };
+
+    despesaBtnEl.disabled = true;
+    despesaMsgEl.textContent = 'Enviando para a planilha…';
+    despesaMsgEl.className = 'form-msg';
+
+    if (editingDespesaId) {
+      var entry = Object.assign({ id: editingDespesaId }, fields);
+      pushToSheet('update_despesa', entry).then(function (resultado) {
+        if (resultado && resultado.ok) {
+          despesaMsgEl.textContent = 'Despesa atualizada.';
+          despesaMsgEl.className = 'form-msg ok';
+          return refreshFromServer(false).then(function () { stopEditDespesa(); });
+        } else {
+          despesaMsgEl.textContent = 'Não foi possível enviar a edição agora. Tente novamente.';
+          despesaMsgEl.className = 'form-msg error';
+        }
+      }).finally(function () { despesaBtnEl.disabled = !state.carregado; });
+      return;
+    }
+
+    var novaDespesa = Object.assign({
+      id: 'd' + Date.now() + '-' + Math.random().toString(36).slice(2, 8)
+    }, fields);
+
+    pushToSheet('create_despesa', novaDespesa).then(function (resultado) {
+      if (resultado && resultado.ok) {
+        despesaMsgEl.textContent = 'Despesa salva na planilha.';
+        despesaMsgEl.className = 'form-msg ok';
+        document.getElementById('despesa-form').reset();
+        document.getElementById('d-data').value = data;
+        return refreshFromServer(false);
+      } else {
+        despesaMsgEl.textContent = 'Não foi possível enviar agora. Verifique a conexão e clique em "Lançar despesa" de novo.';
+        despesaMsgEl.className = 'form-msg error';
+      }
+    }).finally(function () { despesaBtnEl.disabled = !state.carregado; });
+  });
+
+  // ---------------------------------------------------------------------
+  // Alternar entre as telas de Recebimentos e Despesas
+  // ---------------------------------------------------------------------
+  var tabRecebimentos = document.getElementById('tab-recebimentos');
+  var tabDespesas = document.getElementById('tab-despesas');
+  var viewRecebimentos = document.getElementById('view-recebimentos');
+  var viewDespesas = document.getElementById('view-despesas');
+
+  tabRecebimentos.addEventListener('click', function () {
+    tabRecebimentos.classList.add('active');
+    tabDespesas.classList.remove('active');
+    viewRecebimentos.hidden = false;
+    viewDespesas.hidden = true;
+  });
+  tabDespesas.addEventListener('click', function () {
+    tabDespesas.classList.add('active');
+    tabRecebimentos.classList.remove('active');
+    viewDespesas.hidden = false;
+    viewRecebimentos.hidden = true;
+  });
+
+  document.getElementById('d-data').value = todayISO();
+
+  // ---------------------------------------------------------------------
+  // Recibo para impressão
+  // ---------------------------------------------------------------------
+  var LOGO_SRC = document.querySelector('.brand-logo').getAttribute('src');
+
+  function buildReceiptHtml(e) {
+    var valor = Number(e.credito) || 0;
+    var motivo = e.observacao ? escapeHtml(e.observacao) : 'Mensalidade / taxa escolar';
+    return '' +
+      '<div class="receipt-head">' +
+        '<img src="' + LOGO_SRC + '" alt="Logo">' +
+        '<div>' +
+          '<div class="school-name">CENTRO EDUCACIONAL AVANTE</div>' +
+          '<div class="school-sub">' +
+            'EDUCAÇÃO INFANTIL · ENSINO FUNDAMENTAL · ENSINO MÉDIO<br>' +
+            'Autorização de Funcionamento - DEL/CEE/MS Nº 13.083 de 04/12/2024<br>' +
+            'CNPJ: 13.617.157/0001-02 · (67) 99114-8245 · centroeducacionalavante@outlook.com<br>' +
+            'Rua Iguatemi, 723 - Jd. das Gravileas - CEP 79970-000 - Eldorado - MS' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="receipt-title-row">' +
+        '<span class="recibo-word">RECIBO</span>' +
+        '<span class="receipt-num">Nº <input type="text" id="receipt-num-input" value="' + escapeHtml(e.reciboNumero != null ? e.reciboNumero : '') + '"></span>' +
+        '<span class="receipt-amount-box">R$ ' + valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) + '</span>' +
+      '</div>' +
+      '<div class="receipt-line"><label>Recebi(emos) de</label><span class="fill">' + escapeHtml(e.responsavel || e.nome) + '</span></div>' +
+      '<div class="receipt-line"><label>A quantia de R$</label><span class="fill">' + valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) + '</span></div>' +
+      '<div class="receipt-extenso-box">' + valorPorExtenso(valor) + '</div>' +
+      '<div class="receipt-line"><label>Proveniente de</label><span class="fill">' + motivo + '</span></div>' +
+      '<div class="receipt-line">Aluno(a): <span class="fill">' + escapeHtml(e.nome) + '</span></div>' +
+      '<div class="receipt-line">Para maior clareza firmo(amos) o presente.</div>' +
+      '<div class="receipt-line">' + fmtDataExtensoEldorado(e.data) + '</div>' +
+      '<div class="receipt-signature"><div class="sig-line"></div><div class="sig-label">Assinatura</div></div>';
+  }
+
+  var receiptOverlay = document.getElementById('receipt-overlay');
+  var receiptBody = document.getElementById('receipt-body');
+  var currentReceiptId = null;
+
+  function openReceipt(id) {
+    var e = state.recentes.find(function (x) { return x.id === id; });
+    if (!e) return;
+    currentReceiptId = id;
+    receiptBody.innerHTML = buildReceiptHtml(e);
+    receiptOverlay.hidden = false;
+  }
+  function closeReceipt() {
+    receiptOverlay.hidden = true;
+    currentReceiptId = null;
+  }
+  document.getElementById('receipt-close-btn').addEventListener('click', closeReceipt);
+  receiptOverlay.addEventListener('click', function (ev) {
+    if (ev.target === receiptOverlay) closeReceipt();
+  });
+  document.getElementById('receipt-print-btn').addEventListener('click', function () {
+    // Ajuste no número do recibo aqui vale só para esta impressão (não é salvo na planilha).
+    window.print();
+  });
+
+  document.getElementById('f-data').value = todayISO();
+
+  function tickClock() {
+    var d = new Date();
+    document.getElementById('clock').textContent = d.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' });
+  }
+  tickClock();
+
+  var toastEl = document.getElementById('toast');
+  var toastTimer = null;
+  function showToast(msg, ms) {
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toastEl.classList.remove('show'); }, ms || 4200);
+  }
+
+  document.getElementById('open-sheet-btn').addEventListener('click', function () {
+    window.open(GOOGLE_SHEET_URL, '_blank');
+  });
+
+  document.getElementById('sync-link-btn').addEventListener('click', function () {
+    refreshFromServer(true);
+  });
+
+  // Carga inicial + atualização automática periódica (útil com vários dispositivos).
+  btnEl.disabled = true;
+  renderAll();
+  refreshFromServer(false);
+  setInterval(function () { refreshFromServer(false); }, AUTO_REFRESH_MS);
+})();
+</script>
