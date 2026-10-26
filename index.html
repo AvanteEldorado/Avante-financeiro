@@ -355,12 +355,16 @@
   .receipt-signature .sig-label { font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; color: #333; }
 
   @media print {
-    body * { visibility: hidden; }
-    .receipt-print-area, .receipt-print-area * { visibility: visible; }
-    .receipt-print-area { position: absolute; top: 0; left: 0; width: 100%; padding: 0; margin: 0; }
-    .modal-overlay { position: static; background: none; padding: 0; }
+    @page { size: A4; margin: 12mm; }
+    html, body { background: #fff !important; height: auto !important; min-height: 0 !important; overflow: visible !important; margin: 0 !important; padding: 0 !important; }
+    body > *:not(#receipt-overlay) { display: none !important; }
+    #receipt-overlay { position: static !important; display: block !important; background: none !important; padding: 0 !important; overflow: visible !important; }
+    #receipt-overlay[hidden] { display: none !important; }
+    .receipt-wrap { width: 100% !important; margin: 0 auto; }
+    .modal-actions { display: none !important; }
     .no-print { display: none !important; }
-    .receipt { border-width: 1.5px; box-shadow: none; }
+    .receipt-print-area { position: static; padding: 0; margin: 0; break-inside: avoid; page-break-inside: avoid; }
+    .receipt { border-width: 1.5px; box-shadow: none; break-inside: avoid; page-break-inside: avoid; }
   }
 </style>
 
@@ -579,7 +583,7 @@
 
 <div class="toast no-print" id="toast"></div>
 
-<div class="modal-overlay no-print" id="receipt-overlay" hidden>
+<div class="modal-overlay" id="receipt-overlay" hidden>
   <div class="receipt-wrap">
     <div class="modal-actions no-print">
       <button type="button" class="close-btn" id="receipt-close-btn">Fechar</button>
