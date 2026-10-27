@@ -1,3 +1,13 @@
+<!doctype html>
+<html lang="pt-BR">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#12306B">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="AVANTE">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <title>Portal Financeiro AVANTE</title>
 
 <style>
@@ -2687,6 +2697,11 @@
       '<p class="muted" style="margin-top:12px">Conciliados um a um (PIX, cheque, transferência, boleto): ' + r.pares.length + ' lançamento(s).</p>' +
       '<div class="foot">Gerado pelo Portal Financeiro AVANTE.</div></div>';
     imprimirDoc(html);
+  }
+
+  // Permite instalar o portal como aplicativo no celular (precisa do sw.js no mesmo lugar).
+  if ('serviceWorker' in navigator && location.protocol === 'https:') {
+    navigator.serviceWorker.register('sw.js').catch(function (err) { console.warn('service worker:', err); });
   }
 
   // Exposto só para testes no navegador.

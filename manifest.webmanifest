@@ -1,0 +1,17 @@
+{
+  "name": "Portal Financeiro AVANTE",
+  "short_name": "AVANTE",
+  "description": "Lançamentos, fluxo de caixa e conciliação bancária do Centro Educacional AVANTE.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F1EFE8",
+  "theme_color": "#12306B",
+  "lang": "pt-BR",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
