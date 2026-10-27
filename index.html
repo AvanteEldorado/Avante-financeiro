@@ -756,6 +756,10 @@
         <div class="label">Total de despesas do mês</div>
         <div class="amount" id="despesa-amount">R$ 0,00</div>
         <div class="sub" id="despesa-sub"></div>
+        <div class="balance-breakdown">
+          <div><span class="bl">Entradas do mês</span><span class="bv" id="despesa-entradas">R$ 0,00</span></div>
+          <div><span class="bl">Saldo do mês</span><span class="bv" id="despesa-saldo">R$ 0,00</span></div>
+        </div>
       </div>
 
       <div class="card">
@@ -1188,11 +1192,15 @@
   }
 
   function renderDespesaBalance() {
-    var d = state.despesasAtual;
-    document.getElementById('despesa-amount').textContent = fmtMoney(d.total);
-    document.getElementById('despesa-sub').textContent = d.mesNome
-      ? ('Total gasto em ' + d.mesNome + ' (zera a cada mês)')
+    // Total vem da coluna Débito da aba do mês (inclui despesas digitadas
+    // direto na planilha), não só das lançadas por esta página.
+    var s = state.saldoAtual;
+    document.getElementById('despesa-amount').textContent = fmtMoney(s.debito);
+    document.getElementById('despesa-sub').textContent = s.mesNome
+      ? ('Total gasto em ' + s.mesNome + ' (zera a cada mês)')
       : '';
+    document.getElementById('despesa-entradas').textContent = fmtMoney(s.credito);
+    document.getElementById('despesa-saldo').textContent = fmtMoney(s.saldo);
   }
 
   function renderDespesaRecent() {
