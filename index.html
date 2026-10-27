@@ -926,7 +926,7 @@
     <iframe name="conc-upload-frame" id="conc-upload-frame" title="envio do extrato" hidden></iframe>
   </section>
 
-  <footer>Centro Educacional AVANTE — portal financeiro · dados salvos na planilha</footer>
+  <footer>Centro Educacional AVANTE — portal financeiro · dados salvos na planilha<br><span id="versoes"></span></footer>
 </div>
 
 <div id="print-root"></div>
@@ -1114,6 +1114,21 @@
     el.innerHTML = '<strong>Não consegui carregar os dados da planilha.</strong>' + escapeHtml(msg);
   }
 
+  // Página e Apps Script precisam estar na mesma versão. Se o script publicado
+  // for antigo (salvo mas sem "Nova versão" na implantação), avisa na tela.
+  var VERSAO_PAGINA = '2.1 (27/10/2026)';
+  var AVISO_SCRIPT_ANTIGO = 'O Apps Script publicado está desatualizado. Na planilha: Extensões ▸ Apps Script ▸ ' +
+    'Implantar ▸ Gerenciar implantações ▸ lápis ▸ Versão: "Nova versão" ▸ Implantar. Só salvar não publica.';
+  function conferirVersaoScript(versao) {
+    document.getElementById('versoes').textContent = 'Página ' + VERSAO_PAGINA + ' · Script ' + (versao || 'antigo');
+    if (versao === VERSAO_PAGINA) return true;
+    var el = document.getElementById('sync-error');
+    el.hidden = false;
+    el.innerHTML = '<strong>Atenção: login, relatório e conciliação não vão funcionar ainda.</strong>' + escapeHtml(AVISO_SCRIPT_ANTIGO) +
+      (versao ? ' (publicado: ' + escapeHtml(versao) + ', esperado: ' + VERSAO_PAGINA + ')' : '');
+    return false;
+  }
+
   function buscarEstado() {
     if (!WEBAPP_URL) { mostrarErroSync('link do App da Web não configurado.'); return Promise.resolve(false); }
     return jsonpRequest(WEBAPP_URL, {}, 15000)
@@ -1131,6 +1146,7 @@
         state.despesasRecentes = json.despesasRecentes || [];
         state.carregado = true;
         mostrarErroSync(null);
+        conferirVersaoScript(json.versao);
         return true;
       })
       .catch(function (err) {
@@ -1754,6 +1770,12 @@
     jsonpRequest(WEBAPP_URL, { action: 'lista_usuarios', payload: '{}' }, 15000).then(function (json) {
       var lista = (json && json.ok && json.usuarios) || [];
       loginModoAberto = !lista.length;
+      if (json && !json.ok && /desconhecida/.test(json.erro || '')) {
+        conferirVersaoScript('');
+        erroEl.textContent = AVISO_SCRIPT_ANTIGO;
+      } else if (json && json.ok) {
+        conferirVersaoScript(json.versao);
+      }
       document.getElementById('pin-user-field').hidden = loginModoAberto;
       document.getElementById('pin-pin-field').hidden = loginModoAberto;
       document.getElementById('pin-nome-field').hidden = !loginModoAberto;
