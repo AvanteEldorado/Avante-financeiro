@@ -416,7 +416,10 @@
   .group-title { display: flex; align-items: center; gap: 14px; margin: 6px 0 16px; font-family: "Sora", sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink); }
   .group-title::before { content: ""; width: 34px; height: 4px; border-radius: 4px; background: linear-gradient(90deg, var(--accent), var(--gold)); }
   .group-title::after { content: ""; flex: 1; height: 1px; background: var(--line); }
-  .tool-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 20px; margin-bottom: 30px; }
+  /* Ferramentas lado a lado: 4 por linha no computador, 2 em telas médias, 1 no celular */
+  .tool-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; margin-bottom: 30px; }
+  @media (max-width: 1100px) { .tool-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 600px) { .tool-grid { grid-template-columns: 1fr; } }
   .tool-card {
     position: relative; background: var(--paper-raised); border: 1px solid var(--line); border-radius: 18px;
     padding: 24px 24px 20px; box-shadow: var(--shadow); cursor: pointer; text-align: left; font: inherit; color: inherit;
@@ -594,7 +597,7 @@
     </div>
 
     <div class="tool-group" data-group>
-      <div class="group-title">Operação</div>
+      <div class="group-title">Ferramentas</div>
       <div class="tool-grid">
         <button type="button" class="tool-card" data-route="lancamentos" data-search="lançamentos recebimento despesa recibo mensalidade aluno fornecedor" style="--tc:#1F6F63">
           <div class="tool-head">
@@ -605,12 +608,6 @@
           <p>Recebimentos de alunos, despesas com fornecedores e emissão de recibos.</p>
           <span class="tool-open">Abrir <i>→</i></span>
         </button>
-      </div>
-    </div>
-
-    <div class="tool-group" data-group>
-      <div class="group-title">Relatórios</div>
-      <div class="tool-grid">
         <button type="button" class="tool-card" data-route="relatorio" data-search="relatório fluxo de caixa pdf imprimir período mês crédito débito" style="--tc:#B8842E">
           <div class="tool-head">
             <div class="tool-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 20V10M12 20V4M19 20v-7"/></svg></div>
@@ -620,12 +617,6 @@
           <p>Entradas e saídas do período escolhido, separadas mês a mês, prontas para imprimir em PDF.</p>
           <span class="tool-open">Abrir <i>→</i></span>
         </button>
-      </div>
-    </div>
-
-    <div class="tool-group" data-group>
-      <div class="group-title">Conferência</div>
-      <div class="tool-grid">
         <button type="button" class="tool-card" data-route="conciliacao" data-search="conciliação extrato banco sicredi conferência depósito dinheiro pdf" style="--tc:#3E7FA6">
           <div class="tool-head">
             <div class="tool-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h11l-3-3M20 17H9l3 3"/></svg></div>
