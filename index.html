@@ -241,6 +241,9 @@
 
   /* Recent table */
   .table-scroll { overflow-x: auto; }
+  /* Listas longas (últimos 20, busca): altura fixa com rolagem, cabeçalho fixo no topo */
+  .table-scroll.lista-rolavel { max-height: 480px; overflow-y: auto; }
+  .lista-rolavel thead th { position: sticky; top: 0; z-index: 1; background: var(--paper-raised); padding-top: 4px; }
   table { border-collapse: collapse; width: 100%; min-width: 640px; }
   thead th {
     text-align: left;
@@ -261,8 +264,8 @@
     vertical-align: top;
   }
   tbody tr:last-child td { border-bottom: none; }
-  td.name { font-weight: 600; }
-  td.sub { color: var(--ink-soft); font-size: 12px; margin-top: 1px; display: block; }
+  td .name { font-weight: 600; }
+  td .sub { color: var(--ink-soft); font-size: 12px; margin-top: 1px; display: block; }
   td.val { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; white-space: nowrap; }
   td.val.credito { color: var(--good); }
   td.val.debito { color: var(--bad); }
@@ -748,30 +751,69 @@
       </div>
     </div>
 
-    <div class="card">
-      <h2 class="section-title">Últimos 10 lançamentos</h2>
-      <p class="section-hint">Vem direto da planilha — atualiza sozinho a cada minuto.</p>
-      <div class="table-scroll">
-        <table>
-          <thead>
-            <tr>
-              <th>Data</th>
-              <th>Aluno / Responsável</th>
-              <th>Crédito</th>
-              <th>Débito</th>
-              <th>Status</th>
-              <th>Ações</th>
-            </tr>
-          </thead>
-          <tbody id="recent-body"></tbody>
-        </table>
+    <div class="stack">
+      <div class="card">
+        <h2 class="section-title">Últimos 20 lançamentos</h2>
+        <p class="section-hint">Vem direto da planilha — atualiza sozinho a cada minuto. Role a lista para ver todos.</p>
+        <div class="table-scroll lista-rolavel">
+          <table>
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Aluno / Responsável</th>
+                <th>Crédito</th>
+                <th>Débito</th>
+                <th>Status</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="recent-body"></tbody>
+          </table>
+        </div>
+        <div class="empty-state" id="empty-state" hidden>Nenhum lançamento ainda. Use o formulário ao lado.</div>
+        <div class="sync-note">
+          <strong>Como funciona:</strong> esta página não guarda nada em si mesma — a planilha do Google Sheets é a
+          única fonte de dados. Ao abrir a página (ou a cada minuto), ela busca o saldo, a lista de alunos e os últimos
+          lançamentos direto da planilha. Cada lançamento novo, edição ou exclusão é enviado na hora; se a internet
+          falhar no envio, você recebe um aviso na tela para tentar de novo.
+        </div>
       </div>
-      <div class="empty-state" id="empty-state" hidden>Nenhum lançamento ainda. Use o formulário ao lado.</div>
-      <div class="sync-note">
-        <strong>Como funciona:</strong> esta página não guarda nada em si mesma — a planilha do Google Sheets é a
-        única fonte de dados. Ao abrir a página (ou a cada minuto), ela busca o saldo, a lista de alunos e os últimos
-        lançamentos direto da planilha. Cada lançamento novo, edição ou exclusão é enviado na hora; se a internet
-        falhar no envio, você recebe um aviso na tela para tentar de novo.
+
+      <div class="card">
+        <h2 class="section-title">Buscar recibo (2ª via)</h2>
+        <p class="section-hint">Procura em todos os recebimentos lançados por esta página, de qualquer data — não só nos 20 últimos.</p>
+        <form id="busca-form" autocomplete="off">
+          <div class="field">
+            <label for="b-texto">Aluno, responsável ou nº do recibo</label>
+            <input list="dl-alunos" id="b-texto" placeholder="Ex.: Maria, ou 1023">
+          </div>
+          <div class="row-2">
+            <div class="field">
+              <label for="b-de">De (opcional)</label>
+              <input type="date" id="b-de" min="2026-09-01">
+            </div>
+            <div class="field">
+              <label for="b-ate">Até (opcional)</label>
+              <input type="date" id="b-ate" min="2026-09-01">
+            </div>
+          </div>
+          <button type="submit" class="submit" id="busca-btn">Buscar recibo</button>
+          <div class="form-msg" id="busca-msg" role="status"></div>
+        </form>
+        <div class="table-scroll lista-rolavel" id="busca-resultado" style="margin-top:10px" hidden>
+          <table>
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Nº</th>
+                <th>Aluno / Responsável</th>
+                <th>Valor</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="busca-body"></tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
@@ -841,9 +883,9 @@
     </div>
 
     <div class="card">
-      <h2 class="section-title">Últimas 10 despesas</h2>
-      <p class="section-hint">Vem direto da planilha — atualiza sozinho a cada minuto.</p>
-      <div class="table-scroll">
+      <h2 class="section-title">Últimas 20 despesas</h2>
+      <p class="section-hint">Vem direto da planilha — atualiza sozinho a cada minuto. Role a lista para ver todas.</p>
+      <div class="table-scroll lista-rolavel">
         <table>
           <thead>
             <tr>
@@ -957,6 +999,7 @@
     respMap: {},
     responsibles: [],
     recentes: [],
+    buscaRecibos: [],
     saldoAtual: { mesNome: '', credito: 0, debito: 0, saldo: 0 },
     fornecedores: [],
     fornecedorObsMap: {},
@@ -1117,7 +1160,7 @@
 
   // Página e Apps Script precisam estar na mesma versão. Se o script publicado
   // for antigo (salvo mas sem "Nova versão" na implantação), avisa na tela.
-  var VERSAO_PAGINA = '2.1 (27/10/2026)';
+  var VERSAO_PAGINA = '2.3 (05/11/2026)';
   var AVISO_SCRIPT_ANTIGO = 'O Apps Script publicado está desatualizado. Na planilha: Extensões ▸ Apps Script ▸ ' +
     'Implantar ▸ Gerenciar implantações ▸ lápis ▸ Versão: "Nova versão" ▸ Implantar. Só salvar não publica.';
   function conferirVersaoScript(versao) {
@@ -1663,7 +1706,7 @@
   var currentReceiptId = null;
 
   function openReceipt(id) {
-    var e = state.recentes.find(function (x) { return x.id === id; });
+    var e = state.recentes.concat(state.buscaRecibos).find(function (x) { return x.id === id; });
     if (!e) return;
     currentReceiptId = id;
     receiptBody.innerHTML = buildReceiptHtml(e);
@@ -1680,6 +1723,79 @@
   document.getElementById('receipt-print-btn').addEventListener('click', function () {
     // Ajuste no número do recibo aqui vale só para esta impressão (não é salvo na planilha).
     window.print();
+  });
+
+  // ---------------------------------------------------------------------
+  // Buscar recibo (2ª via) — procura em todos os recebimentos da planilha,
+  // de qualquer data, não só nos 20 últimos.
+  // ---------------------------------------------------------------------
+  var buscaMsg = document.getElementById('busca-msg');
+  var buscaBtn = document.getElementById('busca-btn');
+
+  function renderBusca(total) {
+    var lista = state.buscaRecibos;
+    var body = document.getElementById('busca-body');
+    document.getElementById('busca-resultado').hidden = !lista.length;
+    if (!lista.length) {
+      body.innerHTML = '';
+      buscaMsg.textContent = 'Nenhum recibo encontrado. Confira o nome ou tente outro período.';
+      buscaMsg.className = 'form-msg error';
+      return;
+    }
+    buscaMsg.textContent = total > lista.length
+      ? 'Mostrando os ' + lista.length + ' mais recentes de ' + total + ' encontrados — use as datas para refinar.'
+      : (total === 1 ? '1 recibo encontrado.' : total + ' recibos encontrados.');
+    buscaMsg.className = 'form-msg ok';
+    body.innerHTML = lista.map(function (e) {
+      var temNumero = e.reciboNumero !== '' && e.reciboNumero != null;
+      return '<tr>' +
+        '<td class="val">' + fmtDateBR(e.data) + '</td>' +
+        '<td class="val">' + (temNumero ? escapeHtml(e.reciboNumero) : '—') + '</td>' +
+        '<td><span class="name">' + escapeHtml(e.nome) + '</span>' +
+          (e.responsavel ? '<span class="sub">' + escapeHtml(e.responsavel) + '</span>' : '') +
+          (e.observacao ? '<span class="sub">' + escapeHtml(e.observacao) + '</span>' : '') +
+        '</td>' +
+        '<td class="val credito">' + (e.credito ? fmtMoney(e.credito) : '—') + '</td>' +
+        '<td><button type="button" class="btn-chip receipt-chip" data-id="' + escapeHtml(e.id) + '">Ver / imprimir</button></td>' +
+        '</tr>';
+    }).join('');
+    body.querySelectorAll('.receipt-chip').forEach(function (btn) {
+      btn.addEventListener('click', function () { openReceipt(btn.getAttribute('data-id')); });
+    });
+  }
+
+  document.getElementById('busca-form').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var texto = document.getElementById('b-texto').value.trim();
+    var de = document.getElementById('b-de').value;
+    var ate = document.getElementById('b-ate').value;
+    if (!texto && !de && !ate) {
+      buscaMsg.textContent = 'Digite o nome do aluno, do responsável ou o nº do recibo (ou escolha um período).';
+      buscaMsg.className = 'form-msg error';
+      return;
+    }
+    if (de && ate && de > ate) {
+      buscaMsg.textContent = 'A data inicial é maior que a final.';
+      buscaMsg.className = 'form-msg error';
+      return;
+    }
+    buscaBtn.disabled = true;
+    buscaMsg.textContent = 'Procurando na planilha…';
+    buscaMsg.className = 'form-msg';
+    chamar('buscar_recibos', { texto: texto, de: de, ate: ate }, 30000).then(function (json) {
+      state.buscaRecibos = json.resultados || [];
+      renderBusca(json.total || 0);
+    }).catch(function (err) {
+      var msg = (err && err.message) || String(err);
+      state.buscaRecibos = [];
+      document.getElementById('busca-resultado').hidden = true;
+      buscaMsg.textContent = msg.indexOf('ação desconhecida') !== -1
+        ? 'A busca ainda não está disponível. ' + AVISO_SCRIPT_ANTIGO
+        : 'Não consegui buscar na planilha: ' + msg;
+      buscaMsg.className = 'form-msg error';
+    }).then(function () {
+      buscaBtn.disabled = false;
+    });
   });
 
   document.getElementById('f-data').value = todayISO();
