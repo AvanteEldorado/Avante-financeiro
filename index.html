@@ -2103,13 +2103,24 @@
 
     var secoes = relDados.meses.map(function (m, idx) {
       var linhas = ordenarLinhasMes(m.linhas);
+      // Saldo começa em zero no dia 1º e só soma lançamentos datados dentro do
+      // próprio mês da aba. Linhas com data de outro mês (erro de digitação na
+      // planilha) não entram no saldo e são listadas num aviso.
+      var iniMes = m.aba ? (m.aba.slice(-4) + '-' + pad2(MESES_ABA.indexOf(m.aba.slice(0, -4)) + 1) + '-01') : '';
+      var fimMes = iniMes ? ultimoDiaMesISO(iniMes) : '';
+      var foraDoMes = [];
       var saldo = 0, saldoAte = 0;
       linhas.forEach(function (l) {
+        if (iniMes && l.data && (l.data < iniMes || l.data > fimMes)) {
+          l._fora = true; l._saldo = null; foraDoMes.push(l); return;
+        }
+        if (l.data && l.data > ate) { l._saldo = null; return; }
         saldo = round2(saldo + l.credito - l.debito);
         l._saldo = saldo;
-        if (!l.data || l.data <= ate) saldoAte = saldo;
+        saldoAte = saldo;
       });
       var vis = linhas.filter(function (l) {
+        if (l._fora) return false;
         if (l.data && (l.data < de || l.data > ate)) return false;
         if (tipo === 'entradas' && !l.credito) return false;
         if (tipo === 'saidas' && !l.debito) return false;
@@ -2136,10 +2147,19 @@
           (filtrado ? '' : '<td class="r">' + fmtMoney(l._saldo) + '</td>') + '</tr>';
       }).join('');
       T.ent += ent; T.sai += sai;
-      var ultimaData = ate < ultimoDiaMesISO(m.aba ? (m.aba.slice(-4) + '-' + pad2(MESES_ABA.indexOf(m.aba.slice(0, -4)) + 1) + '-01') : ate) ? ate : null;
+      var ultimaData = ate < (fimMes || ate) ? ate : null;
       var html = '<section class="month' + (idx === 0 ? ' first' : '') + '">' +
         '<h2>' + escapeHtml(m.rotulo) + '</h2>';
       if (!m.existe) return html + '<p class="muted">Esta aba ainda não existe na planilha.</p></section>';
+      if (foraDoMes.length) {
+        html += '<div class="banner warn">' + foraDoMes.length + ' lançamento(s) na aba ' + escapeHtml(m.aba) +
+          ' com data fora do mês — não entraram no saldo nem nos totais. Corrija a data na planilha: ' +
+          foraDoMes.map(function (l) {
+            return fmtDateBR(l.data) + ' · ' + escapeHtml(l.nome || '(sem nome)') + ' · ' +
+              (l.credito ? '+' + fmtMoney(l.credito) : '') + (l.debito ? ' −' + fmtMoney(l.debito) : '') +
+              ' (linha ' + escapeHtml(l.chave.split('|')[1]) + ')';
+          }).join('; ') + '</div>';
+      }
       html += '<div class="summary">' +
         '<div><span>Entradas</span><b class="c">' + fmtMoney(ent) + '</b></div>' +
         '<div><span>Saídas</span><b class="d">' + fmtMoney(sai) + '</b></div>' +
