@@ -509,6 +509,8 @@
   .sel-bar[hidden] { display: none; }
   .sel-bar .num { font-family: "IBM Plex Mono", monospace; }
   .sel-bar input { flex: 1; min-width: 180px; background: rgba(255,255,255,0.1); color: inherit; border-color: rgba(255,255,255,0.25); }
+  .sel-bar select { width: auto; min-width: 190px; background: rgba(255,255,255,0.1); color: inherit; border-color: rgba(255,255,255,0.25); }
+  .sel-bar select option { color: #1a1a1a; background: #fff; }
   select.forma-sel { padding: 5px 8px; font-size: 12.5px; width: auto; }
 
   @media print {
@@ -962,7 +964,8 @@
       <span>Extrato <b class="num" id="sel-banco">R$ 0,00</b></span>
       <span>Planilha <b class="num" id="sel-plan">R$ 0,00</b></span>
       <span>Diferença <b class="num" id="sel-dif">R$ 0,00</b></span>
-      <input id="sel-obs" placeholder="Observação (obrigatória se houver diferença)">
+      <select id="sel-motivo" aria-label="Motivo da diferença"></select>
+      <input id="sel-obs" placeholder="Detalhe (opcional)">
       <button type="button" class="btn gold" id="sel-salvar">Conciliar selecionados</button>
       <button type="button" class="btn" id="sel-limpar">Limpar</button>
     </div>
@@ -1160,7 +1163,7 @@
 
   // Página e Apps Script precisam estar na mesma versão. Se o script publicado
   // for antigo (salvo mas sem "Nova versão" na implantação), avisa na tela.
-  var VERSAO_PAGINA = '2.4 (10/11/2026)';
+  var VERSAO_PAGINA = '2.5 (10/11/2026)';
   var AVISO_SCRIPT_ANTIGO = 'O Apps Script publicado está desatualizado. Na planilha: Extensões ▸ Apps Script ▸ ' +
     'Implantar ▸ Gerenciar implantações ▸ lápis ▸ Versão: "Nova versão" ▸ Implantar. Só salvar não publica.';
   function conferirVersaoScript(versao) {
@@ -2616,6 +2619,24 @@
     return lancs.map(function (l) { return escapeHtml(l.nome) + ' ' + fmtMoney(l.credito - l.debito); }).join(' · ');
   }
 
+  // Soma as diferenças (extrato − planilha) das conferências manuais, agrupadas
+  // pelo motivo escrito na observação (ex.: "desconto", "tarifa").
+  function resumoDiferencas(r) {
+    var porChave = {}, ordem = [], total = 0;
+    r.manuais.forEach(function (m) {
+      var dif = round2(m.banco.reduce(function (s, b) { return s + b.valor; }, 0) -
+        m.planilha.reduce(function (s, l) { return s + l.credito - l.debito; }, 0));
+      if (Math.abs(dif) < 0.01) return;
+      var motivo = String(m.grupo.obs || '').split(' — ')[0].trim() || 'sem observação';
+      var chave = norm(motivo).replace(/\s+/g, ' ');
+      if (!porChave[chave]) { porChave[chave] = { motivo: motivo, valor: 0, qtd: 0 }; ordem.push(chave); }
+      porChave[chave].valor = round2(porChave[chave].valor + dif);
+      porChave[chave].qtd++;
+      total = round2(total + dif);
+    });
+    return { total: total, porMotivo: ordem.map(function (k) { return porChave[k]; }) };
+  }
+
   function renderConciliacao() {
     var d = conc.dados;
     var ext = extratoAtual();
@@ -2634,6 +2655,7 @@
         '<br>Para trocar, envie outro PDF.';
     }
     var alvo = document.getElementById('conc-resultado');
+    popularMotivos();
     conc.selB = {}; conc.selP = {};
     atualizarSelecao();
     if (!d) { alvo.innerHTML = ''; return; }
@@ -2721,16 +2743,24 @@
           '<td>' + fmtDateBR(p.b.data) + ' · ' + escapeHtml(p.b.desc) + '</td>' + linhaValor(p.b.valor) + '</tr>';
       }).join(''), '<th>Data planilha</th><th>Lançamento</th><th>No banco</th><th>Valor</th>', false);
 
+    var difs = resumoDiferencas(r);
     html += secao('ok', 'Conferidos manualmente', r.manuais.length, null,
       r.manuais.map(function (m) {
         var vb = m.banco.reduce(function (s, b) { return s + b.valor; }, 0);
         var vp = m.planilha.reduce(function (s, l) { return s + l.credito - l.debito; }, 0);
         return '<tr><td>' + escapeHtml(m.grupo.quando) + '<span class="sub">' + escapeHtml(m.grupo.usuario) + '</span></td>' +
           '<td>' + m.banco.length + ' linha(s) do extrato · ' + m.planilha.length + ' da planilha' +
-          (m.grupo.obs ? '<div class="sub-list">' + escapeHtml(m.grupo.obs) + '</div>' : '') + '</td>' +
+          (m.grupo.obs && Math.abs(round2(vb - vp)) < 0.01 ? '<div class="sub-list">' + escapeHtml(m.grupo.obs) + '</div>' : '') + '</td>' +
           '<td class="val">' + fmtMoney(vb) + '<span class="sub">planilha ' + fmtMoney(vp) + '</span></td>' +
+          (Math.abs(round2(vb - vp)) >= 0.01
+            ? '<td class="val"><b>' + fmtMoney(round2(vb - vp)) + '</b><span class="sub">' + escapeHtml(m.grupo.obs || 'sem observação') + '</span></td>'
+            : '<td class="val">—</td>') +
           '<td><button type="button" class="btn-chip delete-chip desfazer-chip" data-id="' + escapeHtml(m.grupo.id) + '">Desfazer</button></td></tr>';
-      }).join(''), '<th>Quando</th><th>O que foi juntado</th><th>Extrato</th><th></th>', !!conc.abrirManuais);
+      }).join('') + difs.porMotivo.map(function (x) {
+        return '<tr><td></td><td colspan="2"><b>Diferenças — ' + escapeHtml(x.motivo) + '</b> (' + x.qtd + ')</td><td class="val"><b>' + fmtMoney(x.valor) + '</b></td><td></td></tr>';
+      }).join('') + (difs.porMotivo.length > 1
+        ? '<tr><td></td><td colspan="2"><b>Total das diferenças</b></td><td class="val"><b>' + fmtMoney(difs.total) + '</b></td><td></td></tr>' : ''),
+      '<th>Quando</th><th>O que foi juntado</th><th>Extrato</th><th>Diferença (extrato − planilha)</th><th></th>', !!conc.abrirManuais);
     conc.abrirManuais = false;
 
     var fech = (d.fechamentos || []).slice(-1)[0];
@@ -2819,8 +2849,35 @@
     });
   }
 
+  // ---- Motivos da diferença: lista fixa + os adicionados (ficam na planilha) ----
+  var MOTIVOS_PADRAO = ['Desconto', 'Tarifa bancária', 'Juros / multa', 'Arredondamento', 'Pagamento parcial', 'Pagamento a maior'];
+  var selMotivo = document.getElementById('sel-motivo');
+  function popularMotivos(escolhido) {
+    var lista = (conc.dados && conc.dados.motivos && conc.dados.motivos.length) ? conc.dados.motivos : MOTIVOS_PADRAO;
+    var atual = escolhido !== undefined ? escolhido : selMotivo.value;
+    selMotivo.innerHTML = '<option value="">Motivo da diferença…</option>' +
+      lista.map(function (m) { return '<option value="' + escapeHtml(m) + '">' + escapeHtml(m) + '</option>'; }).join('') +
+      '<option value="__novo">+ Adicionar novo motivo…</option>';
+    selMotivo.value = lista.indexOf(atual) !== -1 ? atual : '';
+  }
+  popularMotivos('');
+  selMotivo.addEventListener('change', function () {
+    if (selMotivo.value !== '__novo') return;
+    selMotivo.value = '';
+    var novo = (window.prompt('Novo motivo de diferença (ex.: Taxa de cartão):') || '').trim().replace(/\s+/g, ' ');
+    if (!novo) return;
+    selMotivo.disabled = true;
+    chamar('salvar_motivo', { motivo: novo }).then(function (json) {
+      if (conc.dados) conc.dados.motivos = json.motivos;
+      popularMotivos(json.motivo);
+      showToast('Motivo "' + json.motivo + '" adicionado à lista.');
+    }).catch(function (err) { showToast('Não foi possível adicionar: ' + err.message, 6000); })
+      .finally(function () { selMotivo.disabled = false; });
+  });
+
   document.getElementById('sel-limpar').addEventListener('click', function () {
     conc.selB = {}; conc.selP = {};
+    selMotivo.value = '';
     document.getElementById('sel-obs').value = '';
     marcarCaixas();
     atualizarSelecao();
@@ -2828,13 +2885,15 @@
 
   document.getElementById('sel-salvar').addEventListener('click', function () {
     var s = atualizarSelecao();
-    var obs = document.getElementById('sel-obs').value.trim();
-    if (Math.abs(s.vb - s.vp) >= 0.01 && !obs) { showToast('Há diferença entre extrato e planilha — escreva uma observação explicando.', 6000); return; }
+    var motivo = selMotivo.value === '__novo' ? '' : selMotivo.value;
+    if (Math.abs(s.vb - s.vp) >= 0.01 && !motivo) { showToast('Há diferença entre extrato e planilha — escolha o motivo na lista.', 6000); selMotivo.focus(); return; }
+    var obs = [motivo, document.getElementById('sel-obs').value.trim()].filter(Boolean).join(' — ');
     var btn = this;
     btn.disabled = true;
     chamar('salvar_grupo', { mes: conc.mes, banco: Object.keys(conc.selB), planilha: Object.keys(conc.selP), valor: s.vb, obs: obs, usuario: memoria.usuario })
       .then(function (json) {
         document.getElementById('sel-obs').value = '';
+        selMotivo.value = '';
         return recarregarAposSalvar([json.id]);
       })
       .catch(function (err) { showToast('Não salvou: ' + err.message, 6000); })
@@ -2925,7 +2984,17 @@
       '<h2>Depósitos em dinheiro conciliados</h2>' + tabela('<th>Depósito</th><th>Caixa dos dias</th><th class="r">Valor</th>', r.depositos.map(function (x) {
         return '<tr><td>' + fmtDateBR(x.deposito.data) + '</td><td>' + x.dias.map(function (c) { return fmtDateBR(c.data); }).join(' + ') + '</td>' + vr(x.deposito.valor) + '</tr>'; })) +
       '<h2>Conferidos manualmente</h2>' + tabela('<th>Quando / quem</th><th>Observação</th><th class="r">Extrato</th>', r.manuais.map(function (m) {
-        return '<tr><td>' + escapeHtml(m.grupo.quando + ' · ' + m.grupo.usuario) + '</td><td>' + escapeHtml(m.grupo.obs) + '</td>' + vr(m.banco.reduce(function (s, b) { return s + b.valor; }, 0)) + '</tr>'; })) +
+        var vbI = m.banco.reduce(function (s, b) { return s + b.valor; }, 0);
+        var difI = round2(vbI - m.planilha.reduce(function (s, l) { return s + l.credito - l.debito; }, 0));
+        return '<tr><td>' + escapeHtml(m.grupo.quando + ' · ' + m.grupo.usuario) + '</td><td>' +
+          (Math.abs(difI) >= 0.01 ? '<b>Diferença ' + fmtMoney(difI) + '</b> — ' : '') + escapeHtml(m.grupo.obs) + '</td>' + vr(vbI) + '</tr>'; })) +
+      (function () {
+        var dfs = resumoDiferencas(r);
+        if (!dfs.porMotivo.length) return '';
+        return '<h2>Diferenças das conferências manuais (extrato − planilha)</h2>' + tabela('<th>Motivo</th><th>Qtd.</th><th class="r">Valor</th>',
+          dfs.porMotivo.map(function (x) { return '<tr><td>' + escapeHtml(x.motivo) + '</td><td>' + x.qtd + '</td>' + vr(x.valor) + '</tr>'; })
+            .concat(['<tr><td><b>Total</b></td><td></td>' + vr(dfs.total) + '</tr>']));
+      })() +
       '<p class="muted" style="margin-top:12px">Conciliados um a um (PIX, cheque, transferência, boleto): ' + r.pares.length + ' lançamento(s).</p>' +
       '<div class="foot">Gerado pelo Portal Financeiro AVANTE.</div></div>';
     imprimirDoc(html);
