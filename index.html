@@ -1160,7 +1160,7 @@
 
   // Página e Apps Script precisam estar na mesma versão. Se o script publicado
   // for antigo (salvo mas sem "Nova versão" na implantação), avisa na tela.
-  var VERSAO_PAGINA = '2.3 (05/11/2026)';
+  var VERSAO_PAGINA = '2.4 (10/11/2026)';
   var AVISO_SCRIPT_ANTIGO = 'O Apps Script publicado está desatualizado. Na planilha: Extensões ▸ Apps Script ▸ ' +
     'Implantar ▸ Gerenciar implantações ▸ lápis ▸ Versão: "Nova versão" ▸ Implantar. Só salvar não publica.';
   function conferirVersaoScript(versao) {
@@ -2303,6 +2303,27 @@
     });
   }
 
+  // Procura de 2 a 4 itens cuja soma dá exatamente o alvo (em centavos).
+  // Devolve o menor grupo encontrado, ou null.
+  function subconjuntoQueSoma(itens, alvo, valorDe) {
+    if (itens.length < 2) return null;
+    itens = itens.slice(0, 12);
+    var alvoC = Math.round(alvo * 100);
+    var cents = itens.map(function (x) { return Math.round(valorDe(x) * 100); });
+    var achado = null;
+    function busca(inicio, falta, escolhidos, tamanho) {
+      if (achado) return;
+      if (escolhidos.length === tamanho) { if (falta === 0) achado = escolhidos.slice(); return; }
+      for (var i = inicio; i < itens.length && !achado; i++) {
+        escolhidos.push(itens[i]);
+        busca(i + 1, falta - cents[i], escolhidos, tamanho);
+        escolhidos.pop();
+      }
+    }
+    for (var n = 2; n <= 4 && !achado; n++) busca(0, alvoC, [], n);
+    return achado;
+  }
+
   // Compara extrato x planilha.
   // 1) grupos conferidos à mão saem da conta;
   // 2) PIX/cheque/transferência/boleto: um a um (mesmo valor, data próxima, nome ajuda);
@@ -2342,6 +2363,41 @@
       if (usadosP[c.l.chave] || usadosB[c.b.id]) return;
       usadosP[c.l.chave] = true; usadosB[c.b.id] = true;
       pares.push(c);
+    });
+
+    // Somas: vários PIX para um lançamento (pagou em partes) ou um PIX para
+    // vários lançamentos (pagou dois filhos de uma vez). Só entra quando a
+    // soma bate exata, as datas são próximas e o nome aparece na descrição do
+    // banco. Fica como sugestão — só vale depois de confirmada na tela.
+    var somas = [], sugeridosB = 0;
+    var valorL = function (l) { return round2(l.credito - l.debito); };
+    var perto = function (l, b) {
+      var dd = diasEntre(l.data, b.data);
+      return dd !== null && dd >= -2 && dd <= 6;
+    };
+    var restoL = function () { return doMes.filter(function (l) { return !usadosP[l.chave] && l.forma !== 'Dinheiro' && valorL(l); }); };
+    var restoB = function () { return banco.filter(function (b) { return !usadosB[b.id] && b.tipo !== 'dinheiro'; }); };
+    var registrarSoma = function (lancs, linhas) {
+      lancs.forEach(function (l) { usadosP[l.chave] = true; });
+      linhas.forEach(function (b) { usadosB[b.id] = true; });
+      sugeridosB += linhas.length;
+      somas.push({ lancs: lancs, banco: linhas, valor: round2(linhas.reduce(function (s, b) { return s + b.valor; }, 0)) });
+    };
+    restoL().forEach(function (l) {
+      var v = valorL(l);
+      var cand = restoB().filter(function (b) {
+        return (b.valor > 0) === (v > 0) && Math.abs(b.valor) < Math.abs(v) && perto(l, b) && nomeBate(l, b);
+      });
+      var achado = subconjuntoQueSoma(cand, v, function (b) { return b.valor; });
+      if (achado) registrarSoma([l], achado);
+    });
+    restoB().forEach(function (b) {
+      var cand = restoL().filter(function (l) {
+        var v = valorL(l);
+        return (v > 0) === (b.valor > 0) && Math.abs(v) < Math.abs(b.valor) && perto(l, b) && nomeBate(l, b);
+      });
+      var achado = subconjuntoQueSoma(cand, b.valor, valorL);
+      if (achado) registrarSoma(achado, [b]);
     });
 
     var caixa = {};
@@ -2386,7 +2442,7 @@
 
     var soma = function (arr, f) { return round2(arr.reduce(function (s, x) { return s + f(x); }, 0)); };
     return {
-      manuais: manuais, pares: pares, depositos: depositos, semOrigem: semOrigem,
+      manuais: manuais, pares: pares, somas: somas, depositos: depositos, semOrigem: semOrigem,
       aguardando: dias.filter(function (c) { return !c.usado && !c.mesAnterior && Math.abs(c.valor) >= 0.01; }),
       soExtrato: banco.filter(function (b) { return !usadosB[b.id] && b.tipo !== 'dinheiro'; }),
       soPlanilha: doMes.filter(function (l) { return !usadosP[l.chave] && (l.forma !== 'Dinheiro' || !l.data); }),
@@ -2397,7 +2453,7 @@
         planEnt: soma(doMes, function (l) { return l.credito; }),
         planSai: soma(doMes, function (l) { return l.debito; }),
         linhasBanco: banco.length,
-        linhasBancoOk: banco.filter(function (b) { return usadosB[b.id]; }).length
+        linhasBancoOk: banco.filter(function (b) { return usadosB[b.id]; }).length - sugeridosB
       }
     };
   }
@@ -2588,7 +2644,7 @@
     }
     var r = conc.resultado = conciliar(ext.linhasLista, d.lancamentos, d.grupos);
     var t = r.totais;
-    var pend = r.soExtrato.length + r.semOrigem.length + r.soPlanilha.length + r.aguardando.length;
+    var pend = r.soExtrato.length + r.semOrigem.length + r.soPlanilha.length + r.aguardando.length + r.somas.length;
     var leitura = ext.conferido === false
       ? '<div class="banner warn">A soma das linhas lidas não fechou com o saldo final do PDF (diferença ' + fmtMoney(ext.diferencaLeitura) + '). Confira se o arquivo está completo.</div>' : '';
 
@@ -2597,6 +2653,21 @@
       '<div class="kpi in"><div class="kl">Entradas banco × planilha</div><div class="kv">' + fmtMoney(t.bancoEnt) + '</div><div class="ks">Planilha: ' + fmtMoney(t.planEnt) + '</div></div>' +
       '<div class="kpi out"><div class="kl">Saídas banco × planilha</div><div class="kv">' + fmtMoney(t.bancoSai) + '</div><div class="ks">Planilha: ' + fmtMoney(t.planSai) + '</div></div>' +
       '<div class="kpi"><div class="kl">Linhas do extrato conferidas</div><div class="kv">' + t.linhasBancoOk + ' / ' + t.linhasBanco + '</div><div class="ks">' + pend + ' pendência(s)</div></div></div>';
+
+    if (r.somas.length) {
+      html += secao('warn', 'Sugestões por soma — confirmar', r.somas.length,
+        r.somas.reduce(function (s, x) { return s + x.valor; }, 0),
+        r.somas.map(function (x, i) {
+          return '<tr><td>' + x.lancs.map(function (l) {
+              return '<span class="name">' + escapeHtml(l.nome) + '</span><span class="sub">' + (l.data ? fmtDateBR(l.data) : '—') + ' · ' + fmtMoney(l.credito - l.debito) + '</span>';
+            }).join('') + '</td><td>' + x.banco.map(function (b) {
+              return '<div>' + fmtDateBR(b.data) + ' · ' + escapeHtml(b.desc) + ' · <b>' + fmtMoney(b.valor) + '</b></div>';
+            }).join('') + '</td>' + linhaValor(x.valor) +
+            '<td><button type="button" class="btn-chip soma-chip" data-i="' + i + '">Confirmar</button></td></tr>';
+        }).join(''), '<th>Na planilha</th><th>No banco</th><th>Soma</th><th></th>', true,
+        'A soma bate exata e o nome aparece no extrato (ex.: dois PIX para uma mensalidade, ou um PIX para dois filhos). Confira e clique em "Confirmar"' +
+        (r.somas.length > 1 ? ' — ou <button type="button" class="btn-chip" id="soma-todas">Confirmar todas</button>' : '') + '.');
+    }
 
     html += secao('bad', 'Só no extrato — falta lançar na planilha', r.soExtrato.length,
       r.soExtrato.reduce(function (s, b) { return s + b.valor; }, 0),
@@ -2659,7 +2730,8 @@
           (m.grupo.obs ? '<div class="sub-list">' + escapeHtml(m.grupo.obs) + '</div>' : '') + '</td>' +
           '<td class="val">' + fmtMoney(vb) + '<span class="sub">planilha ' + fmtMoney(vp) + '</span></td>' +
           '<td><button type="button" class="btn-chip delete-chip desfazer-chip" data-id="' + escapeHtml(m.grupo.id) + '">Desfazer</button></td></tr>';
-      }).join(''), '<th>Quando</th><th>O que foi juntado</th><th>Extrato</th><th></th>', false);
+      }).join(''), '<th>Quando</th><th>O que foi juntado</th><th>Extrato</th><th></th>', !!conc.abrirManuais);
+    conc.abrirManuais = false;
 
     var fech = (d.fechamentos || []).slice(-1)[0];
     html += '<div class="card" style="margin-top:18px"><div class="btn-row">' +
@@ -2713,6 +2785,19 @@
       document.getElementById('sel-obs').value = 'Depósito com diferença de ' + fmtMoney(x.sugestao.diferenca) + ' em relação ao caixa';
       marcarCaixas();
       atualizarSelecao();
+    } else if (btn.classList.contains('soma-chip') || btn.id === 'soma-todas') {
+      var lista = btn.id === 'soma-todas' ? conc.resultado.somas.slice() : [conc.resultado.somas[Number(btn.getAttribute('data-i'))]];
+      btn.disabled = true;
+      var ids = [];
+      lista.reduce(function (p, x) {
+        return p.then(function () {
+          return chamar('salvar_grupo', {
+            mes: conc.mes, banco: x.banco.map(function (b) { return b.id; }), planilha: x.lancs.map(function (l) { return l.chave; }),
+            valor: x.valor, obs: 'Soma conferida: ' + x.banco.length + ' no extrato = ' + x.lancs.length + ' na planilha', usuario: memoria.usuario
+          }).then(function (json) { ids.push(json.id); });
+        });
+      }, Promise.resolve()).then(function () { return recarregarAposSalvar(ids); })
+        .catch(function (err) { btn.disabled = false; showToast('Não salvou: ' + err.message, 6000); });
     } else if (btn.classList.contains('desfazer-chip')) {
       if (!window.confirm('Desfazer esta conferência manual?')) return;
       chamar('remover_grupo', { id: btn.getAttribute('data-id') }).then(carregarConciliacao)
@@ -2748,14 +2833,32 @@
     var btn = this;
     btn.disabled = true;
     chamar('salvar_grupo', { mes: conc.mes, banco: Object.keys(conc.selB), planilha: Object.keys(conc.selP), valor: s.vb, obs: obs, usuario: memoria.usuario })
-      .then(function () {
+      .then(function (json) {
         document.getElementById('sel-obs').value = '';
-        showToast('Conferência salva.');
-        return carregarConciliacao();
+        return recarregarAposSalvar([json.id]);
       })
       .catch(function (err) { showToast('Não salvou: ' + err.message, 6000); })
       .finally(function () { btn.disabled = false; });
   });
+
+  // Recarrega o mês e confere se as conferências recém-salvas voltaram da
+  // planilha — se não voltaram, avisa em vez de dizer que deu certo.
+  function recarregarAposSalvar(ids) {
+    conc.abrirManuais = true;
+    return carregarConciliacao().then(function () {
+      var salvos = {};
+      ((conc.dados && conc.dados.grupos) || []).forEach(function (g) { salvos[g.id] = true; });
+      var faltam = ids.filter(function (id) { return !salvos[id]; }).length;
+      if (faltam) {
+        concMsg.className = 'form-msg error';
+        concMsg.textContent = 'Atenção: a planilha gravou a conferência, mas ela não voltou na lista (' + faltam + ' de ' + ids.length +
+          '). Nada mudou na tela. Clique em "Atualizar"; se continuar, avise o João — pode ser o script desatualizado.';
+        showToast('A conferência não apareceu na lista — veja o aviso no alto da tela.', 7000);
+      } else {
+        showToast(ids.length > 1 ? ids.length + ' conferências salvas.' : 'Conferência salva — veja em "Conferidos manualmente".');
+      }
+    });
+  }
 
   function lancarDoExtrato(b) {
     if (!b) return;
@@ -2809,6 +2912,8 @@
       '<div><span>Entradas banco / planilha</span><b>' + fmtMoney(t.bancoEnt) + '</b><br>' + fmtMoney(t.planEnt) + '</div>' +
       '<div><span>Saídas banco / planilha</span><b>' + fmtMoney(t.bancoSai) + '</b><br>' + fmtMoney(t.planSai) + '</div>' +
       '<div><span>Linhas conferidas</span><b>' + t.linhasBancoOk + ' / ' + t.linhasBanco + '</b></div></div>' +
+      (r.somas.length ? '<h2>Sugestões por soma (ainda não confirmadas)</h2>' + tabela('<th>Na planilha</th><th>No banco</th><th class="r">Soma</th>', r.somas.map(function (x) {
+        return '<tr><td>' + x.lancs.map(function (l) { return escapeHtml(l.nome); }).join(' + ') + '</td><td>' + x.banco.length + ' linha(s)</td>' + vr(x.valor) + '</tr>'; })) : '') +
       '<h2>Só no extrato (falta lançar)</h2>' + tabela('<th>Data</th><th>Descrição</th><th class="r">Valor</th>', r.soExtrato.map(function (b) {
         return '<tr><td>' + fmtDateBR(b.data) + '</td><td>' + escapeHtml(b.desc) + '</td>' + vr(b.valor) + '</tr>'; })) +
       '<h2>Depósitos em dinheiro sem origem</h2>' + tabela('<th>Data</th><th>Depósitos</th><th class="r">Valor</th>', r.semOrigem.map(function (x) {
