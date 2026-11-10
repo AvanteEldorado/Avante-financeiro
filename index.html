@@ -487,6 +487,23 @@
   .doc .foot { margin-top: 16px; font-size: 10px; color: #666; text-align: center; }
   @media (max-width: 640px) { .doc { padding: 14px; } .doc .summary { grid-template-columns: 1fr 1fr; } }
   #print-root { display: none; }
+  /* DRE Mensal */
+  .doc.paisagem { page: paisagem; }
+  @page paisagem { size: A4 landscape; margin: 10mm 10mm 12mm; }
+  .doc table.dre { font-size: 11px; }
+  .doc table.dre td, .doc table.dre th { padding: 4px 5px; }
+  .doc table.dre td:first-child { white-space: nowrap; }
+  .doc table.dre tr.sec td { font-weight: 700; color: #12463F; background: #EEF3F1; text-transform: uppercase; font-size: 10px; letter-spacing: 0.05em; padding-top: 7px; }
+  .doc table.dre tr.sub td { font-weight: 700; border-top: 1px solid #12463F; }
+  .doc table.dre tr.res td { font-weight: 800; border-top: 2px solid #12463F; background: #F4F7F5; font-size: 12px; }
+  .doc table.dre tr.pct td { color: #666; font-size: 10px; border-bottom: none; }
+  .doc table.dre td.item { padding-left: 16px; }
+  .doc table.dre .neg { color: #A6432E; }
+  .doc table.dre tr.conf td { color: #555; font-size: 10.5px; }
+  .doc table.dre td.dif { color: #A6432E; font-weight: 700; }
+  .dre-class select { padding: 5px 8px; font-size: 12.5px; max-width: 290px; }
+  .dre-class .auto { font-size: 11px; color: var(--ink-soft); }
+  .dre-class tr.pendente td { background: var(--gold-soft); }
 
   /* Conciliação */
   .drop { border: 2px dashed var(--line); border-radius: 12px; padding: 18px; text-align: center; background: var(--paper); }
@@ -629,6 +646,15 @@
           </div>
           <h3>Conciliação Bancária</h3>
           <p>Envie o PDF do extrato e compare com a planilha — PIX, cheques e depósitos de dinheiro.</p>
+          <span class="tool-open">Abrir <i>→</i></span>
+        </button>
+        <button type="button" class="tool-card" data-route="dre" data-search="dre demonstrativo resultado lucro despesas receitas revollu mensal anual" style="--tc:#6B4E9B">
+          <div class="tool-head">
+            <div class="tool-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4h16v16H4z"/><path d="M4 9h16M4 14h16M10 9v11"/></svg></div>
+            <span class="tool-tag">Revollu · mês a mês</span>
+          </div>
+          <h3>DRE Mensal</h3>
+          <p>Receitas, despesas e resultado de cada mês do ano, a partir dos lançamentos do Revollu.</p>
           <span class="tool-open">Abrir <i>→</i></span>
         </button>
         <button type="button" class="tool-card" disabled data-search="resumo aluno inadimplência devedores" style="--tc:#8A8F8C">
@@ -939,6 +965,29 @@
     <div id="rel-resultado" style="margin-top:20px"></div>
   </section>
 
+  <section class="view" id="view-dre" hidden>
+    <button type="button" class="btn-chip back-btn" data-route="home">← Portal</button>
+    <div class="page-head">
+      <div><div class="eyebrow">Relatórios</div><h1>DRE Mensal</h1></div>
+    </div>
+    <div class="card">
+      <div class="filters">
+        <div class="field"><label for="dre-ano">Ano</label><select id="dre-ano"></select></div>
+        <div class="field"><label for="dre-mes">Meses</label>
+          <select id="dre-mes"><option value="">Ano inteiro (mês a mês)</option></select></div>
+        <div class="field"><label for="dre-zeros">Linhas</label>
+          <select id="dre-zeros"><option value="0">Só linhas com valor</option><option value="1">Todas as linhas</option></select></div>
+      </div>
+      <div class="btn-row" style="margin-top:14px">
+        <button type="button" class="btn primary" id="dre-gerar">Gerar DRE</button>
+        <button type="button" class="btn gold" id="dre-imprimir" disabled>Imprimir / salvar PDF</button>
+        <span class="muted" id="dre-msg"></span>
+      </div>
+    </div>
+    <div id="dre-resultado" style="margin-top:20px"></div>
+    <div id="dre-classificacao" style="margin-top:20px"></div>
+  </section>
+
   <section class="view" id="view-conciliacao" hidden>
     <button type="button" class="btn-chip back-btn" data-route="home">← Portal</button>
     <div class="page-head">
@@ -1163,7 +1212,7 @@
 
   // Página e Apps Script precisam estar na mesma versão. Se o script publicado
   // for antigo (salvo mas sem "Nova versão" na implantação), avisa na tela.
-  var VERSAO_PAGINA = '2.5 (10/11/2026)';
+  var VERSAO_PAGINA = '2.6 (10/11/2026)';
   var AVISO_SCRIPT_ANTIGO = 'O Apps Script publicado está desatualizado. Na planilha: Extensões ▸ Apps Script ▸ ' +
     'Implantar ▸ Gerenciar implantações ▸ lápis ▸ Versão: "Nova versão" ▸ Implantar. Só salvar não publica.';
   function conferirVersaoScript(versao) {
@@ -1938,6 +1987,7 @@
         document.getElementById('pin-input').value = '';
         refreshFromServer(false);
         if (rotaAtual() === 'conciliacao') carregarConciliacao();
+        if (rotaAtual() === 'dre') gerarDre();
       } else {
         erroEl.textContent = (json && json.erro) || 'Usuário ou senha incorretos.';
       }
@@ -1994,7 +2044,7 @@
   // =====================================================================
   // Navegação do portal (#/home, #/lancamentos, #/relatorio, #/conciliacao)
   // =====================================================================
-  var VIEWS = ['home', 'lancamentos', 'relatorio', 'conciliacao'];
+  var VIEWS = ['home', 'lancamentos', 'relatorio', 'conciliacao', 'dre'];
   function rotaAtual() {
     var h = (location.hash || '').replace(/^#\/?/, '');
     return VIEWS.indexOf(h) !== -1 ? h : 'home';
@@ -2003,6 +2053,7 @@
     var r = rotaAtual();
     VIEWS.forEach(function (v) { document.getElementById('view-' + v).hidden = v !== r; });
     if (r === 'relatorio') prepararRelatorio();
+    if (r === 'dre') prepararDre();
     if (r === 'conciliacao') entrarConciliacao(); else sairConciliacao();
     window.scrollTo(0, 0);
   }
@@ -2200,6 +2251,336 @@
   }
   var MESES_ABA = ['JANEIRO', 'FEVEREIRO', 'MARCO', 'ABRIL', 'MAIO', 'JUNHO', 'JULHO', 'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO'];
   var MESES_ROTULO = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+
+  // =====================================================================
+  // DRE MENSAL — soma os lançamentos do Revollu (aba REVOLLU_LANCAMENTOS)
+  // por categoria e mês, e encaixa cada categoria numa linha da DRE.
+  // Regime de caixa: entra pela data de pagamento (o Revollu só traz pagos).
+  // Entradas somam (+), saídas subtraem (−). A classificação automática pode
+  // ser trocada na própria tela e fica salva na aba oculta DRE_MAPA.
+  // =====================================================================
+  var DRE_GRUPOS = [
+    { id: 'rb', nome: 'Receita bruta', total: '(=) Receita bruta', linhas: [
+      ['rec_mensalidade', 'Mensalidades'],
+      ['rec_matricula', 'Taxas de matrícula / rematrícula'],
+      ['rec_apostila', 'Apostilas e material didático'],
+      ['rec_outras', 'Outras receitas'],
+      ['rec_nc', 'Entradas a classificar'] ] },
+    { id: 'ded', nome: 'Deduções da receita', total: '(−) Total de deduções', linhas: [
+      ['ded_simples', 'Simples Nacional'],
+      ['ded_impostos', 'Outros impostos sobre a receita'] ] },
+    { calc: 'rl', nome: '(=) Receita líquida', soma: ['rb', 'ded'] },
+    { id: 'pes', nome: 'Despesas com pessoal', total: '(−) Total com pessoal', linhas: [
+      ['pes_folha', 'Salários / folha de pagamento'],
+      ['pes_encargos', 'Encargos (FGTS, INSS, DARF)'],
+      ['pes_prolabore', 'Pró-labore'],
+      ['pes_terceiros', 'Professores substitutos e serviços avulsos'],
+      ['pes_beneficios', 'Benefícios, exames e treinamentos'] ] },
+    { id: 'op', nome: 'Despesas operacionais', total: '(−) Total operacional', linhas: [
+      ['op_ocupacao', 'Aluguel, energia, água e saneamento'],
+      ['op_comunicacao', 'Telefone e internet'],
+      ['op_manutencao', 'Manutenção do prédio e equipamentos'],
+      ['op_material', 'Material didático e escolar (compras)'],
+      ['op_consumo', 'Supermercado, limpeza e copa'],
+      ['op_servicos', 'Honorários, software e serviços'],
+      ['op_transporte', 'Transporte e veículos'],
+      ['op_marketing', 'Propaganda, eventos e festas'],
+      ['op_diversas', 'Gastos diversos'],
+      ['op_nc', 'Saídas a classificar'] ] },
+    { calc: 'ebitda', nome: '(=) Resultado operacional', soma: ['rl', 'pes', 'op'] },
+    { id: 'fin', nome: 'Resultado financeiro', total: '(±) Total financeiro', linhas: [
+      ['fin_tarifas', 'Tarifas bancárias'],
+      ['fin_juros', 'Juros, multas e IOF'] ] },
+    { id: 'nop', nome: 'Não operacional', total: '(±) Total não operacional', linhas: [
+      ['nop_investimentos', 'Investimentos (móveis, equipamentos, obras)'],
+      ['nop_emprestimos', 'Empréstimos e parcelamentos'] ] },
+    { calc: 'res', nome: '(=) Resultado líquido do período', soma: ['ebitda', 'fin', 'nop'], margem: true }
+  ];
+  var DRE_FORA = 'fora';
+  var DRE_NOMES = { fora: 'Fora da DRE (transferências entre contas etc.)' };
+  DRE_GRUPOS.forEach(function (g) { (g.linhas || []).forEach(function (l) { DRE_NOMES[l[0]] = l[1]; }); });
+
+  // Sugestão automática pela descrição da categoria (a ordem importa).
+  var DRE_REGRAS_E = [
+    [/mensalidade/, 'rec_mensalidade'],
+    [/matricula/, 'rec_matricula'],
+    [/apostila|material didatico|livro|uniforme/, 'rec_apostila'],
+    [/transferencia/, DRE_FORA],
+    [/diversos|outr|juros|multa|evento|festa|cantina/, 'rec_outras']
+  ];
+  var DRE_REGRAS_S = [
+    [/transferencia/, DRE_FORA],
+    [/simples nacional|\bdas\b/, 'ded_simples'],
+    [/\biss\b|\bpis\b|cofins/, 'ded_impostos'],
+    [/tarifa|taxas? bancaria/, 'fin_tarifas'],
+    [/juros|multa|\biof\b/, 'fin_juros'],
+    [/emprestimo|parcelamento|financiamento|consorcio/, 'nop_emprestimos'],
+    [/investimento|imobilizado|moveis|mobiliario|obra|construcao|equipamento/, 'nop_investimentos'],
+    [/pro.?labore/, 'pes_prolabore'],
+    [/folha|salario|ferias|decimo|rescis|adiantamento/, 'pes_folha'],
+    [/fgts|inss|darf|encargo|\bgps\b|irrf/, 'pes_encargos'],
+    [/substitut|diarista|autonomo|freelancer|estagi/, 'pes_terceiros'],
+    [/exame|vale|plano de saude|treinamento|curso|uniforme func/, 'pes_beneficios'],
+    [/aluguel|energia|\bluz\b|agua|saneamento|esgoto/, 'op_ocupacao'],
+    [/telefone|internet|celular/, 'op_comunicacao'],
+    [/manutencao|reforma|conserto|reparo|pintura/, 'op_manutencao'],
+    [/material|apostila|livro|papelaria|copiadora|xerox|impress/, 'op_material'],
+    [/supermercado|mercado|limpeza|copa|alimenta|lanche|cantina/, 'op_consumo'],
+    [/honorario|contab|software|sistema|servico|assessoria|advoga/, 'op_servicos'],
+    [/transporte|combustivel|veiculo|onibus|van\b/, 'op_transporte'],
+    [/propaganda|marketing|publicidade|festa|evento|formatura|brinde/, 'op_marketing'],
+    [/diversos|outras|outros/, 'op_diversas']
+  ];
+  function dreSugestao(cat) {
+    var txt = norm(cat.categoria).toLowerCase();
+    var regras = cat.tipo === 'E' ? DRE_REGRAS_E : DRE_REGRAS_S;
+    for (var i = 0; i < regras.length; i++) if (regras[i][0].test(txt)) return regras[i][1];
+    return cat.tipo === 'E' ? 'rec_nc' : 'op_nc';
+  }
+  function dreLinhaDe(cat) {
+    var m = dreDados && dreDados.mapa && dreDados.mapa[cat.chave];
+    return m && (DRE_NOMES[m]) ? m : dreSugestao(cat);
+  }
+
+  var dreDados = null;
+  var dreAnoSel = document.getElementById('dre-ano');
+  var dreMesSel = document.getElementById('dre-mes');
+  var dreMsg = document.getElementById('dre-msg');
+  var dreImprimirBtn = document.getElementById('dre-imprimir');
+  (function () {
+    var hoje = new Date();
+    var ops = [];
+    for (var a = hoje.getFullYear(); a >= hoje.getFullYear() - 2; a--) ops.push('<option>' + a + '</option>');
+    dreAnoSel.innerHTML = ops.join('');
+    dreMesSel.innerHTML = '<option value="">Ano inteiro (mês a mês)</option>' + MESES_ROTULO.map(function (n, i) {
+      return '<option value="' + i + '">' + n + ' (com acumulado no ano)</option>';
+    }).join('');
+  })();
+  function prepararDre() { if (!dreDados) gerarDre(); }
+  document.getElementById('dre-gerar').addEventListener('click', gerarDre);
+  dreAnoSel.addEventListener('change', gerarDre);
+  dreMesSel.addEventListener('change', function () { if (dreDados) renderDre(); });
+  document.getElementById('dre-zeros').addEventListener('change', function () { if (dreDados) renderDre(); });
+  dreImprimirBtn.addEventListener('click', function () {
+    imprimirDoc(document.getElementById('dre-resultado').innerHTML);
+  });
+
+  function gerarDre() {
+    var ano = Number(dreAnoSel.value);
+    dreMsg.textContent = 'Buscando dados do Revollu na planilha…';
+    dreImprimirBtn.disabled = true;
+    chamar('dre_dados', { ano: ano }, 45000).then(function (json) {
+      dreDados = json;
+      dreMsg.textContent = '';
+      // Anos disponíveis = os que estão na aba + os 3 últimos
+      var anos = {};
+      Array.prototype.forEach.call(dreAnoSel.options, function (o) { anos[o.value] = true; });
+      (json.anos || []).forEach(function (a) { anos[a] = true; });
+      var lista = Object.keys(anos).map(Number).sort(function (a, b) { return b - a; });
+      dreAnoSel.innerHTML = lista.map(function (a) { return '<option' + (a === ano ? ' selected' : '') + '>' + a + '</option>'; }).join('');
+      renderDre();
+    }).catch(function (err) {
+      dreMsg.textContent = 'Não foi possível gerar: ' + err.message;
+    });
+  }
+
+  function fmtNumDre(v) {
+    v = round2(v);
+    if (Math.abs(v) < 0.005) return '–';
+    var s = Math.abs(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return v < 0 ? '<span class="neg">−' + s + '</span>' : s;
+  }
+  function fmtPct(v, base) {
+    if (!base || Math.abs(base) < 0.005) return '';
+    return (v / base * 100).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).replace('-', '−') + '%';
+  }
+
+  // Monta os valores (12 meses) de cada linha, grupo e cálculo da DRE.
+  function calcularDre() {
+    var zero = function () { return [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]; };
+    var linhas = {}, fora = zero(), entradas = zero(), saidas = zero();
+    Object.keys(DRE_NOMES).forEach(function (k) { linhas[k] = zero(); });
+    (dreDados.categorias || []).forEach(function (c) {
+      var destino = dreLinhaDe(c);
+      var sinal = c.tipo === 'E' ? 1 : -1;
+      c.meses.forEach(function (v, m) {
+        if (c.tipo === 'E') entradas[m] += v; else saidas[m] += v;
+        if (destino === DRE_FORA) fora[m] += sinal * v;
+        else linhas[destino][m] += sinal * v;
+      });
+    });
+    var grupos = {};
+    DRE_GRUPOS.forEach(function (g) {
+      var t = zero();
+      if (g.linhas) g.linhas.forEach(function (l) { linhas[l[0]].forEach(function (v, m) { t[m] += v; }); });
+      else g.soma.forEach(function (id) { grupos[id].forEach(function (v, m) { t[m] += v; }); });
+      grupos[g.id || g.calc] = t;
+    });
+    return { linhas: linhas, grupos: grupos, fora: fora, entradas: entradas, saidas: saidas };
+  }
+
+  function renderDre() {
+    var res = document.getElementById('dre-resultado');
+    var cls = document.getElementById('dre-classificacao');
+    var ano = dreDados.ano;
+    if (!dreDados.temRevollu) {
+      res.innerHTML = '<div class="banner warn">A aba <b>REVOLLU_LANCAMENTOS</b> ainda não existe na planilha. ' +
+        'Abra a planilha e use o menu <b>Revollu ▸ Atualizar ano atual</b> (script RevolluSync).</div>';
+      cls.innerHTML = ''; dreImprimirBtn.disabled = true; return;
+    }
+    if (!dreDados.categorias.length) {
+      res.innerHTML = '<div class="banner warn">Não há lançamentos do Revollu de ' + ano + ' na planilha. ' +
+        'A aba REVOLLU_LANCAMENTOS guarda um ano por vez' + (dreDados.anos.length ? ' (hoje: ' + dreDados.anos.join(', ') + ')' : '') +
+        '. Para trazer outro ano: menu <b>Revollu ▸ Atualizar outro ano</b>.</div>';
+      cls.innerHTML = ''; dreImprimirBtn.disabled = true; return;
+    }
+    var D = calcularDre();
+    var mostrarZeros = document.getElementById('dre-zeros').value === '1';
+    var mesSel = dreMesSel.value === '' ? null : Number(dreMesSel.value);
+
+    // Colunas: ano inteiro = meses com dados + Total + %; um mês = mês, %, acumulado, %.
+    var ultimoMes = 0;
+    D.entradas.forEach(function (v, m) { if (v || D.saidas[m]) ultimoMes = m; });
+    var cols;
+    if (mesSel === null) {
+      cols = [];
+      for (var m = 0; m <= ultimoMes; m++) cols.push({ rot: MESES_ROTULO[m].slice(0, 3), meses: [m] });
+      var todos = cols.map(function (c) { return c.meses[0]; });
+      cols.push({ rot: 'Total ' + ano, meses: todos, total: true });
+      cols.push({ rot: '% rec.', pctDe: todos });
+    } else {
+      var acum = []; for (var k = 0; k <= mesSel; k++) acum.push(k);
+      cols = [
+        { rot: MESES_ROTULO[mesSel], meses: [mesSel] }, { rot: '% rec.', pctDe: [mesSel] },
+        { rot: 'Acumulado jan–' + MESES_ROTULO[mesSel].slice(0, 3).toLowerCase(), meses: acum, total: true }, { rot: '% rec.', pctDe: acum }
+      ];
+    }
+    function soma(arr, meses) { var t = 0; meses.forEach(function (m) { t += arr[m]; }); return t; }
+    function celulas(arr) {
+      return cols.map(function (c) {
+        if (c.pctDe) return '<td class="r">' + fmtPct(soma(arr, c.pctDe), soma(D.grupos.rb, c.pctDe)) + '</td>';
+        return '<td class="r"' + (c.total ? ' style="font-weight:700"' : '') + '>' + fmtNumDre(soma(arr, c.meses)) + '</td>';
+      }).join('');
+    }
+    function temValor(arr) { return cols.some(function (c) { return c.meses && Math.abs(soma(arr, c.meses)) >= 0.005; }); }
+
+    var corpo = '';
+    DRE_GRUPOS.forEach(function (g) {
+      if (g.calc) {
+        corpo += '<tr class="' + (g.margem ? 'res' : 'sub') + '"><td>' + escapeHtml(g.nome) + '</td>' + celulas(D.grupos[g.calc]) + '</tr>';
+        if (g.margem) {
+          corpo += '<tr class="pct"><td>Margem líquida (resultado ÷ receita bruta)</td>' + cols.map(function (c) {
+            var ms = c.meses || c.pctDe;
+            return '<td class="r">' + (c.pctDe ? '' : fmtPct(soma(D.grupos.res, ms), soma(D.grupos.rb, ms))) + '</td>';
+          }).join('') + '</tr>';
+        }
+        return;
+      }
+      var itens = g.linhas.filter(function (l) { return mostrarZeros || temValor(D.linhas[l[0]]); });
+      if (!itens.length && !mostrarZeros) return;
+      corpo += '<tr class="sec"><td colspan="' + (cols.length + 1) + '">' + escapeHtml(g.nome) + '</td></tr>';
+      itens.forEach(function (l) {
+        corpo += '<tr><td class="item">' + escapeHtml(l[1]) + '</td>' + celulas(D.linhas[l[0]]) + '</tr>';
+      });
+      corpo += '<tr class="sub"><td>' + escapeHtml(g.total) + '</td>' + celulas(D.grupos[g.id]) + '</tr>';
+    });
+
+    // Conferência: o que ficou fora da DRE e comparação com as abas do portal.
+    var conf = '';
+    if (temValor(D.fora)) conf += '<tr class="conf"><td>Fora da DRE (transferências etc.)</td>' + celulas(D.fora) + '</tr>';
+    var temPortal = (dreDados.portal || []).some(function (p) { return p; });
+    if (temPortal) {
+      var pe = dreDados.portal.map(function (p) { return p ? p.entradas : 0; });
+      var ps = dreDados.portal.map(function (p) { return p ? -p.saidas : 0; });
+      var re = D.entradas.slice(), rs = D.saidas.map(function (v) { return -v; });
+      var semPortal = dreDados.portal.map(function (p) { return !p; });
+      var linhaConf = function (nome, arr, comparar) {
+        return '<tr class="conf"><td>' + nome + '</td>' + cols.map(function (c) {
+          if (c.pctDe) return '<td></td>';
+          var ms = c.meses.filter(function (m) { return !semPortal[m]; });
+          if (!ms.length) return '<td class="r">·</td>';
+          var v = soma(arr, ms);
+          var dif = comparar && Math.abs(v - soma(comparar, ms)) >= 1;
+          return '<td class="r' + (dif ? ' dif' : '') + '">' + fmtNumDre(v) + '</td>';
+        }).join('') + '</tr>';
+      };
+      conf += linhaConf('Revollu — entradas', re) + linhaConf('Portal (abas do mês) — entradas', pe, re) +
+        linhaConf('Revollu — saídas', rs) + linhaConf('Portal (abas do mês) — saídas', ps, rs);
+    }
+
+    var periodo = (mesSel === null ? 'Ano de ' + ano + ' — mês a mês' : MESES_ROTULO[mesSel] + '/' + ano + ' e acumulado do ano') +
+      ' · regime de caixa (data de pagamento)';
+    var cab = '<tr><th>Descrição</th>' + cols.map(function (c) { return '<th class="r">' + escapeHtml(c.rot) + '</th>'; }).join('') + '</tr>';
+    var tabMeses = mesSel === null ? cols.length : 4;
+    res.innerHTML = '<div class="doc' + (tabMeses > 6 ? ' paisagem' : '') + '">' +
+      cabecalhoDoc('DRE — Demonstrativo de Resultado', periodo) +
+      '<div class="table-scroll"><table class="dre"><thead>' + cab + '</thead><tbody>' + corpo + '</tbody></table></div>' +
+      (conf ? '<h2>Conferência</h2><div class="table-scroll"><table class="dre"><thead>' + cab + '</thead><tbody>' + conf + '</tbody></table></div>' +
+        '<p class="foot" style="text-align:left">Portal = abas mensais da planilha (a partir de set/2026). Valores em vermelho diferem do Revollu em mais de R$ 1,00 — lançamento que está só num dos dois sistemas.</p>' : '') +
+      '<div class="foot">Fonte: Revollu (relatório contábil) importado na aba REVOLLU_LANCAMENTOS · ' + escapeHtml(dreDados.atualizadoEm || '') +
+      '<br>Entradas e saídas pela data de pagamento. Classificação das categorias conforme a tela "DRE Mensal" do portal.</div></div>';
+    dreImprimirBtn.disabled = false;
+    renderClassificacaoDre();
+  }
+
+  function opcoesLinhaDre(selecionada, sugestao) {
+    var html = '<option value=""' + (!selecionada ? ' selected' : '') + '>Automático: ' + escapeHtml(DRE_NOMES[sugestao]) + '</option>';
+    DRE_GRUPOS.forEach(function (g) {
+      if (!g.linhas) return;
+      html += '<optgroup label="' + escapeHtml(g.nome) + '">' + g.linhas.filter(function (l) { return !/_nc$/.test(l[0]); }).map(function (l) {
+        return '<option value="' + l[0] + '"' + (selecionada === l[0] ? ' selected' : '') + '>' + escapeHtml(l[1]) + '</option>';
+      }).join('') + '</optgroup>';
+    });
+    html += '<option value="' + DRE_FORA + '"' + (selecionada === DRE_FORA ? ' selected' : '') + '>' + escapeHtml(DRE_NOMES[DRE_FORA]) + '</option>';
+    return html;
+  }
+
+  function renderClassificacaoDre() {
+    var cats = dreDados.categorias.slice().sort(function (a, b) {
+      if (a.tipo !== b.tipo) return a.tipo < b.tipo ? -1 : 1;
+      return a.categoria.localeCompare(b.categoria, 'pt-BR');
+    });
+    var pendentes = 0;
+    var linhas = cats.map(function (c) {
+      var manual = dreDados.mapa[c.chave] && DRE_NOMES[dreDados.mapa[c.chave]] ? dreDados.mapa[c.chave] : '';
+      var sug = dreSugestao(c);
+      var efetiva = manual || sug;
+      var pend = /_nc$/.test(efetiva);
+      if (pend) pendentes++;
+      var total = c.meses.reduce(function (s, v) { return s + v; }, 0);
+      return '<tr' + (pend ? ' class="pendente"' : '') + '><td>' + (c.tipo === 'E' ? 'Entrada' : 'Saída') + '</td>' +
+        '<td><b>' + escapeHtml(c.categoria) + '</b></td><td class="r">' + c.qtd + '</td>' +
+        '<td class="val ' + (c.tipo === 'E' ? 'credito' : 'debito') + '">' + fmtMoney(total) + '</td>' +
+        '<td><select data-dre-chave="' + escapeHtml(c.chave) + '">' + opcoesLinhaDre(manual, sug) + '</select>' +
+        (manual ? '' : ' <span class="auto">automático</span>') + '</td></tr>';
+    }).join('');
+    document.getElementById('dre-classificacao').innerHTML = '<div class="card dre-class">' +
+      '<div class="page-head" style="margin-bottom:10px"><div><div class="eyebrow">Ajuste</div><h1 style="font-size:20px">Classificação das categorias do Revollu</h1></div></div>' +
+      '<p class="muted" style="margin-bottom:10px">Cada categoria do Revollu entra numa linha da DRE. A sugestão automática vem do nome da categoria; ' +
+      'troque quando precisar — fica salvo na planilha (aba oculta DRE_MAPA) e vale para todos os meses e anos.</p>' +
+      (pendentes ? '<div class="banner warn">' + pendentes + ' categoria(s) sem linha definida — estão em "a classificar". Escolha a linha certa abaixo.</div>' : '') +
+      '<div class="table-scroll"><table><thead><tr><th>Tipo</th><th>Categoria no Revollu</th><th class="r">Lanç.</th><th>Total ' + dreDados.ano + '</th><th>Linha da DRE</th></tr></thead><tbody>' +
+      linhas + '</tbody></table></div><span class="muted" id="dre-class-msg"></span></div>';
+  }
+
+  document.getElementById('dre-classificacao').addEventListener('change', function (ev) {
+    var sel = ev.target.closest('select[data-dre-chave]');
+    if (!sel) return;
+    var chave = sel.getAttribute('data-dre-chave');
+    var linha = sel.value;
+    var msg = document.getElementById('dre-class-msg');
+    sel.disabled = true;
+    if (msg) msg.textContent = 'Salvando…';
+    chamar('dre_salvar_mapa', { chave: chave, linha: linha }, 20000).then(function (json) {
+      dreDados.mapa = json.mapa || dreDados.mapa;
+      renderDre();
+      var m2 = document.getElementById('dre-class-msg');
+      if (m2) m2.textContent = 'Salvo.';
+    }).catch(function (err) {
+      sel.disabled = false;
+      if (msg) msg.textContent = 'Não foi possível salvar: ' + err.message;
+    });
+  });
 
   // =====================================================================
   // CONCILIAÇÃO BANCÁRIA
