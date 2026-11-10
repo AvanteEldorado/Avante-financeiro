@@ -504,6 +504,24 @@
   .dre-class select { padding: 5px 8px; font-size: 12.5px; max-width: 290px; }
   .dre-class .auto { font-size: 11px; color: var(--ink-soft); }
   .dre-class tr.pendente td { background: var(--gold-soft); }
+  .dre-class tr.forn td { font-size: 12.5px; }
+  /* Painel da DRE — cores de série da paleta de referência (validada), por papel */
+  .painel { --pn-rec: #2a78d6; --pn-desp: #eb6834; --pn-res: #6250d6; --pn-neg: #e34948; }
+  @media (prefers-color-scheme: dark) { :root:where(:not([data-theme="light"])) .painel { --pn-rec: #3987e5; --pn-desp: #d95926; --pn-res: #9085e9; --pn-neg: #e66767; } }
+  :root[data-theme="dark"] .painel { --pn-rec: #3987e5; --pn-desp: #d95926; --pn-res: #9085e9; --pn-neg: #e66767; }
+  .pn-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin: 18px 0; }
+  .pn-kpi { background: var(--paper-raised); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; box-shadow: var(--shadow); }
+  .pn-kpi span { display: block; font-size: 11.5px; font-weight: 650; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-soft); }
+  .pn-kpi b { display: block; font-size: clamp(20px, 2.4vw, 26px); margin: 4px 0 2px; color: var(--ink); }
+  .pn-kpi small { color: var(--ink-soft); font-size: 12px; }
+  .pn-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  .pn-grid .card h3 { font-size: 15px; margin-bottom: 2px; }
+  .pn-grid .pn-wide { grid-column: 1 / -1; }
+  .pn-canvas { position: relative; height: 280px; margin-top: 10px; }
+  .pn-canvas.tall { height: 330px; }
+  .pn-chip { display: inline-flex; gap: 6px; align-items: center; background: var(--accent-soft); color: var(--accent-ink); border: 1px solid var(--accent); border-radius: 999px; padding: 3px 10px; font-size: 12.5px; }
+  .pn-chip button { border: 0; background: none; color: inherit; cursor: pointer; font-size: 14px; padding: 0 2px; }
+  @media (max-width: 900px) { .pn-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .pn-grid { grid-template-columns: 1fr; } }
 
   /* Conciliação */
   .drop { border: 2px dashed var(--line); border-radius: 12px; padding: 18px; text-align: center; background: var(--paper); }
@@ -655,6 +673,15 @@
           </div>
           <h3>DRE Mensal</h3>
           <p>Receitas, despesas e resultado de cada mês do ano, a partir dos lançamentos do Revollu.</p>
+          <span class="tool-open">Abrir <i>→</i></span>
+        </button>
+        <button type="button" class="tool-card" data-route="painel" data-search="painel dashboard gráfico gráficos dre resultado margem despesas receitas série" style="--tc:#2A78D6">
+          <div class="tool-head">
+            <div class="tool-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg></div>
+            <span class="tool-tag">Gráficos interativos</span>
+          </div>
+          <h3>Painel da DRE</h3>
+          <p>Receita, despesas, resultado e margem em gráficos, com filtro por período e clique no mês.</p>
           <span class="tool-open">Abrir <i>→</i></span>
         </button>
         <button type="button" class="tool-card" disabled data-search="resumo aluno inadimplência devedores" style="--tc:#8A8F8C">
@@ -988,6 +1015,40 @@
     <div id="dre-classificacao" style="margin-top:20px"></div>
   </section>
 
+  <section class="view painel" id="view-painel" hidden>
+    <button type="button" class="btn-chip back-btn" data-route="home">← Portal</button>
+    <div class="page-head">
+      <div><div class="eyebrow">Relatórios</div><h1>Painel da DRE</h1></div>
+      <div class="btn-row"><button type="button" class="btn" data-route="dre">Ver DRE em tabela</button></div>
+    </div>
+    <div class="card">
+      <div class="filters">
+        <div class="field"><label for="pn-ano">Ano</label><select id="pn-ano"></select></div>
+        <div class="field"><label for="pn-de">De</label><select id="pn-de"></select></div>
+        <div class="field"><label for="pn-ate">Até</label><select id="pn-ate"></select></div>
+        <div class="field"><label>&nbsp;</label><button type="button" class="btn" id="pn-atualizar">Atualizar dados</button></div>
+      </div>
+      <div class="btn-row" style="margin-top:10px"><span class="muted" id="pn-msg"></span><span id="pn-chip"></span></div>
+    </div>
+    <div id="pn-conteudo" hidden>
+      <div class="pn-kpis">
+        <div class="pn-kpi"><span>Receita bruta</span><b id="pn-k-rec">—</b><small id="pn-k-rec2"></small></div>
+        <div class="pn-kpi"><span>Despesas e custos</span><b id="pn-k-desp">—</b><small id="pn-k-desp2"></small></div>
+        <div class="pn-kpi"><span>Resultado líquido</span><b id="pn-k-res">—</b><small id="pn-k-res2"></small></div>
+        <div class="pn-kpi"><span>Margem líquida</span><b id="pn-k-mar">—</b><small id="pn-k-mar2"></small></div>
+      </div>
+      <div class="pn-grid">
+        <div class="card pn-wide"><h3>Receita, despesas e resultado por mês</h3><p class="muted">Clique num mês para ver só ele nos outros gráficos; clique de novo para voltar ao período.</p><div class="pn-canvas tall"><canvas id="pn-c-meses"></canvas></div></div>
+        <div class="card"><h3>Margem líquida por mês</h3><p class="muted">Resultado líquido ÷ receita bruta.</p><div class="pn-canvas"><canvas id="pn-c-margem"></canvas></div></div>
+        <div class="card"><h3>Para onde vai o dinheiro</h3><p class="muted">Saídas por grupo da DRE. Clique num grupo para ver as maiores despesas dele.</p><div class="pn-canvas"><canvas id="pn-c-grupos"></canvas></div></div>
+        <div class="card"><h3 id="pn-t-top">Maiores despesas</h3><p class="muted" id="pn-s-top">Linhas da DRE com mais saída no período.</p><div class="pn-canvas"><canvas id="pn-c-top"></canvas></div></div>
+        <div class="card"><h3>Receita por tipo</h3><p class="muted">Entradas por linha da DRE.</p><div class="pn-canvas"><canvas id="pn-c-tipo"></canvas></div></div>
+        <div class="card pn-wide"><h3>Mensalidades por série</h3><p class="muted">Conforme a categoria usada no Revollu.</p><div class="pn-canvas tall"><canvas id="pn-c-serie"></canvas></div></div>
+      </div>
+      <p class="muted" style="margin-top:12px" id="pn-fonte"></p>
+    </div>
+  </section>
+
   <section class="view" id="view-conciliacao" hidden>
     <button type="button" class="btn-chip back-btn" data-route="home">← Portal</button>
     <div class="page-head">
@@ -1212,7 +1273,7 @@
 
   // Página e Apps Script precisam estar na mesma versão. Se o script publicado
   // for antigo (salvo mas sem "Nova versão" na implantação), avisa na tela.
-  var VERSAO_PAGINA = '2.6 (10/11/2026)';
+  var VERSAO_PAGINA = '2.7 (10/11/2026)';
   var AVISO_SCRIPT_ANTIGO = 'O Apps Script publicado está desatualizado. Na planilha: Extensões ▸ Apps Script ▸ ' +
     'Implantar ▸ Gerenciar implantações ▸ lápis ▸ Versão: "Nova versão" ▸ Implantar. Só salvar não publica.';
   function conferirVersaoScript(versao) {
@@ -1988,6 +2049,7 @@
         refreshFromServer(false);
         if (rotaAtual() === 'conciliacao') carregarConciliacao();
         if (rotaAtual() === 'dre') gerarDre();
+        if (rotaAtual() === 'painel') carregarPainel();
       } else {
         erroEl.textContent = (json && json.erro) || 'Usuário ou senha incorretos.';
       }
@@ -2044,7 +2106,7 @@
   // =====================================================================
   // Navegação do portal (#/home, #/lancamentos, #/relatorio, #/conciliacao)
   // =====================================================================
-  var VIEWS = ['home', 'lancamentos', 'relatorio', 'conciliacao', 'dre'];
+  var VIEWS = ['home', 'lancamentos', 'relatorio', 'conciliacao', 'dre', 'painel'];
   function rotaAtual() {
     var h = (location.hash || '').replace(/^#\/?/, '');
     return VIEWS.indexOf(h) !== -1 ? h : 'home';
@@ -2054,6 +2116,7 @@
     VIEWS.forEach(function (v) { document.getElementById('view-' + v).hidden = v !== r; });
     if (r === 'relatorio') prepararRelatorio();
     if (r === 'dre') prepararDre();
+    if (r === 'painel') prepararPainel();
     if (r === 'conciliacao') entrarConciliacao(); else sairConciliacao();
     window.scrollTo(0, 0);
   }
@@ -2268,10 +2331,14 @@
       ['rec_nc', 'Entradas a classificar'] ] },
     { id: 'ded', nome: 'Deduções da receita', total: '(−) Total de deduções', linhas: [
       ['ded_simples', 'Simples Nacional'],
+      ['ded_devolucoes', 'Devoluções e estornos de mensalidade'],
       ['ded_impostos', 'Outros impostos sobre a receita'] ] },
     { calc: 'rl', nome: '(=) Receita líquida', soma: ['rb', 'ded'] },
+    { id: 'cus', nome: 'Custos', total: '(−) Total de custos', linhas: [
+      ['cus_apostilas', 'Compra de apostilas (sistema de ensino)'] ] },
+    { calc: 'lb', nome: '(=) Lucro bruto', soma: ['rl', 'cus'] },
     { id: 'pes', nome: 'Despesas com pessoal', total: '(−) Total com pessoal', linhas: [
-      ['pes_folha', 'Salários / folha de pagamento'],
+      ['pes_folha', 'Salários, férias e rescisões'],
       ['pes_encargos', 'Encargos (FGTS, INSS, DARF)'],
       ['pes_prolabore', 'Pró-labore'],
       ['pes_terceiros', 'Professores substitutos e serviços avulsos'],
@@ -2283,11 +2350,12 @@
       ['op_material', 'Material didático e escolar (compras)'],
       ['op_consumo', 'Supermercado, limpeza e copa'],
       ['op_servicos', 'Honorários, software e serviços'],
+      ['op_taxas', 'Seguros, taxas e cartório'],
       ['op_transporte', 'Transporte e veículos'],
       ['op_marketing', 'Propaganda, eventos e festas'],
       ['op_diversas', 'Gastos diversos'],
       ['op_nc', 'Saídas a classificar'] ] },
-    { calc: 'ebitda', nome: '(=) Resultado operacional', soma: ['rl', 'pes', 'op'] },
+    { calc: 'ebitda', nome: '(=) Resultado operacional', soma: ['lb', 'pes', 'op'] },
     { id: 'fin', nome: 'Resultado financeiro', total: '(±) Total financeiro', linhas: [
       ['fin_tarifas', 'Tarifas bancárias'],
       ['fin_juros', 'Juros, multas e IOF'] ] },
@@ -2310,7 +2378,12 @@
   ];
   var DRE_REGRAS_S = [
     [/transferencia/, DRE_FORA],
+    [/mensalidade/, 'ded_devolucoes'],
     [/simples nacional|\bdas\b/, 'ded_simples'],
+    [/seguro|cartorio|prefeitura|certificac|alvara|iptu/, 'op_taxas'],
+    [/tecnologia|informatica/, 'op_servicos'],
+    [/mao de obra/, 'op_manutencao'],
+    [/padaria|farmacia|drogaria/, 'op_consumo'],
     [/\biss\b|\bpis\b|cofins/, 'ded_impostos'],
     [/tarifa|taxas? bancaria/, 'fin_tarifas'],
     [/juros|multa|\biof\b/, 'fin_juros'],
@@ -2331,16 +2404,75 @@
     [/propaganda|marketing|publicidade|festa|evento|formatura|brinde/, 'op_marketing'],
     [/diversos|outras|outros/, 'op_diversas']
   ];
-  function dreSugestao(cat) {
+  // Classificação revisada com a direção em 10/11/2026 (categorias e fornecedores
+  // de 2026). Vale como padrão; o que estiver na aba DRE_MAPA vale por cima.
+  // Chave "E|Categoria", "S|Categoria" ou "S|Categoria|Fornecedor".
+  var DRE_PADRAO = {
+    'E|Doação': 'rec_outras', 'E|(sem categoria)': 'rec_outras', 'E|Gastos diversos': 'rec_outras',
+    'S|Folha de pagamento': 'pes_folha', 'S|Férias (Encargos Trabalhistas)': 'pes_folha', 'S|Rescisão (Encargos Sociais)': 'pes_folha',
+    'S|FGTS (Encargos Sociais)': 'pes_encargos', 'S|DARF': 'pes_encargos', 'S|(-) IMPOSTOS': 'pes_encargos',
+    'S|Professores Substitutos': 'pes_terceiros', 'S|Simples Nacional': 'ded_simples', 'S|(+) MENSALIDADE ESCOLAR': 'ded_devolucoes',
+    'S|Parcela Apostila': 'cus_apostilas', 'S|Material Didático': 'op_material',
+    'S|Material Didático|COMPANHIA BRASILEIRA DE EDUCACAO E SISTEMAS DE ENSINO S.A': 'cus_apostilas',
+    'S|Manutenção do Prédio': 'op_manutencao', 'S|Manutenção do Prédio|Depósito Paraná': 'nop_investimentos',
+    'S|Energia Elétrica': 'op_ocupacao', 'S|Saneamento Básico': 'op_ocupacao',
+    'S|Marketing e Publicidade': 'op_marketing', 'S|(-) TRANSPORTE': 'op_transporte',
+    'S|Supermercado': 'op_consumo', 'S|Lanche': 'op_consumo', 'S|Padaria': 'op_consumo', 'S|Farmácia': 'op_consumo',
+    'S|Contabilidade': 'op_servicos', 'S|Tecnologia da Informação': 'op_servicos',
+    'S|Serviços eventuais': 'op_manutencao', 'S|Serviços eventuais|Porto Seguro companhia de seguros gerais': 'op_taxas',
+    'S|Serviços eventuais|Pagamento funcionários': 'pes_terceiros',
+    'S|(-) MÃO DE OBRA TEMPORÁRIA': 'op_manutencao', 'S|Compra de equipamentos': 'nop_investimentos',
+    'S|Taxas bancárias': 'fin_tarifas', 'S|Telefonia e Internet': 'op_comunicacao',
+    'S|Acordos Financeiros': 'op_nc',
+    'S|Gastos diversos': 'op_diversas'
+  };
+  // Fornecedores dentro de "Gastos diversos" (pessoas físicas ficam "a classificar":
+  // a direção vai decidir uma a uma).
+  [['Copisa', 'op_material'], ['PapPel Livraria e Papelaria', 'op_material'],
+   ['SINTRAE', 'pes_encargos'], ['SARITA SOUSA DE O. MASSUCHINI', 'pes_beneficios'],
+   ['Porto Seguro companhia de seguros gerais', 'op_taxas'], ['Prefeitura Municipal de Eldorado', 'op_taxas'],
+   ['Governo do Estado de Mato Grosso do Sul', 'op_taxas'], ['Cartório de Registro de Imóveis e Protestos', 'op_taxas'], ['Certificação Digital', 'op_taxas'],
+   ['Cortinas', 'op_manutencao'], ['Instelpa', 'op_manutencao'], ['Corte de Grama', 'op_manutencao'], ['MM Ferragens', 'op_manutencao'],
+   ['Naviseg Extintores e Equipamentos de Proteção', 'op_manutencao'], ['Milton Barbosa Materias Eletricos', 'op_manutencao'],
+   ['Tornearia do Markinhos', 'op_manutencao'], ['TV Técnica Universal', 'op_manutencao'],
+   ['Casa de Carnes e Conveniencia Eldorado', 'op_consumo'], ['Tropical Embalagens', 'op_consumo'], ['Mercado Rafagnin', 'op_consumo'],
+   ['Torrefação e moagem de café Rio Paraná Ltda ( carrocao)', 'op_consumo'], ['Rei da Pizza (Thais Borges de Moraes)', 'op_consumo'],
+   ['Real Gas', 'op_consumo'], ['Diego Jose Dalla Chiesa LTDA (Mundial Super)', 'op_consumo'], ['Farma Popular', 'op_consumo'], ['Drogaria Supofarma', 'op_consumo'],
+   ['Yapay pagamentos online ltda', 'op_servicos'], ['Ultimate Informatica LTDA', 'op_servicos'], ['Escritório Argus Contabilidade', 'op_servicos'], ['Security', 'op_servicos'],
+   ['JD Visual', 'op_marketing'], ['Gráfica Cometa', 'op_marketing'], ['Sympla Internet soluções S:A', 'op_marketing'],
+   ['Recarga celular', 'op_comunicacao'],
+   ['Mercado Livre', 'op_diversas'], ['Quero Quero', 'op_diversas'], ['Shpp Brasil Instituição de pagamento e serviços de pagamento Ltda.', 'op_diversas'],
+   ['Deivid Santinon Simões', 'op_nc'], ['Rita de Cássia Storari', 'op_nc'], ['Vilma Fogaça', 'op_nc'], ['Rafael Berti Bonifacio', 'op_nc'],
+   ['Alex Michel Pires Napolitano', 'op_nc'], ['Raquel Ricardo da Silva', 'op_nc'], ['Fabio Junior Maciel da Silva', 'op_nc'],
+   ['Marcos Vieira da Silva', 'op_nc'], ['Izabeli Rosa Lopes da Silva', 'op_nc'], ['Thiago Candido Korzune', 'op_nc'],
+   ['Carlos Alberto Jesus de Oliveira', 'op_nc'], ['Edgar Martins Amorim', 'op_nc'], ['Stelanto ltda', 'op_nc'], ['A.M.E', 'op_nc'],
+   ['Ensino Médio Avante', 'op_nc'], ['(sem fornecedor)', 'op_nc']
+  ].forEach(function (p) { DRE_PADRAO['S|Gastos diversos|' + p[0]] = p[1]; });
+
+  // Comparação tolerante (acentos, maiúsculas e espaços não importam).
+  function dreChaveNorm(chave) { return norm(chave).toLowerCase().replace(/\s+/g, ' ').trim(); }
+  var DRE_PADRAO_N = {};
+  Object.keys(DRE_PADRAO).forEach(function (k) { DRE_PADRAO_N[dreChaveNorm(k)] = DRE_PADRAO[k]; });
+  function dreBuscar(mapaN, chave) { var v = mapaN[dreChaveNorm(chave)]; return v && DRE_NOMES[v] ? v : ''; }
+  var dreMapaN = {};
+  function dreAtualizarMapaN() {
+    dreMapaN = {};
+    Object.keys((dreDados && dreDados.mapa) || {}).forEach(function (k) { dreMapaN[dreChaveNorm(k)] = dreDados.mapa[k]; });
+  }
+
+  function dreRegra(cat) {
     var txt = norm(cat.categoria).toLowerCase();
     var regras = cat.tipo === 'E' ? DRE_REGRAS_E : DRE_REGRAS_S;
     for (var i = 0; i < regras.length; i++) if (regras[i][0].test(txt)) return regras[i][1];
     return cat.tipo === 'E' ? 'rec_nc' : 'op_nc';
   }
-  function dreLinhaDe(cat) {
-    var m = dreDados && dreDados.mapa && dreDados.mapa[cat.chave];
-    return m && (DRE_NOMES[m]) ? m : dreSugestao(cat);
-  }
+  // Linha da categoria sem olhar a planilha: padrão revisado, senão regra pelo nome.
+  function dreSugestao(cat) { return dreBuscar(DRE_PADRAO_N, cat.chave) || dreRegra(cat); }
+  // Linha efetiva da categoria: planilha (DRE_MAPA) > padrão > regra.
+  function dreLinhaDe(cat) { return dreBuscar(dreMapaN, cat.chave) || dreSugestao(cat); }
+  // Fornecedor: planilha (fornecedor) > padrão (fornecedor) > linha da categoria.
+  function dreSugestaoForn(cat, f) { return dreBuscar(DRE_PADRAO_N, f.chave) || dreLinhaDe(cat); }
+  function dreLinhaForn(cat, f) { return dreBuscar(dreMapaN, f.chave) || dreSugestaoForn(cat, f); }
 
   var dreDados = null;
   var dreAnoSel = document.getElementById('dre-ano');
@@ -2371,6 +2503,7 @@
     dreImprimirBtn.disabled = true;
     chamar('dre_dados', { ano: ano }, 45000).then(function (json) {
       dreDados = json;
+      dreAtualizarMapaN();
       dreMsg.textContent = '';
       // Anos disponíveis = os que estão na aba + os 3 últimos
       var anos = {};
@@ -2400,14 +2533,23 @@
     var zero = function () { return [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]; };
     var linhas = {}, fora = zero(), entradas = zero(), saidas = zero();
     Object.keys(DRE_NOMES).forEach(function (k) { linhas[k] = zero(); });
-    (dreDados.categorias || []).forEach(function (c) {
-      var destino = dreLinhaDe(c);
-      var sinal = c.tipo === 'E' ? 1 : -1;
-      c.meses.forEach(function (v, m) {
-        if (c.tipo === 'E') entradas[m] += v; else saidas[m] += v;
+    var origem = {}; // linha da DRE -> [{rotulo, meses}] (para o painel e detalhes)
+    Object.keys(DRE_NOMES).forEach(function (k) { origem[k] = []; });
+    function somar(destino, sinal, meses, rotulo) {
+      meses.forEach(function (v, m) {
         if (destino === DRE_FORA) fora[m] += sinal * v;
         else linhas[destino][m] += sinal * v;
       });
+      origem[destino].push({ rotulo: rotulo, sinal: sinal, meses: meses });
+    }
+    (dreDados.categorias || []).forEach(function (c) {
+      var sinal = c.tipo === 'E' ? 1 : -1;
+      c.meses.forEach(function (v, m) { if (c.tipo === 'E') entradas[m] += v; else saidas[m] += v; });
+      if (c.fornecedores && c.fornecedores.length) {
+        c.fornecedores.forEach(function (f) { somar(dreLinhaForn(c, f), sinal, f.meses, c.categoria + ' · ' + f.nome); });
+      } else {
+        somar(dreLinhaDe(c), sinal, c.meses, c.categoria);
+      }
     });
     var grupos = {};
     DRE_GRUPOS.forEach(function (g) {
@@ -2416,7 +2558,7 @@
       else g.soma.forEach(function (id) { grupos[id].forEach(function (v, m) { t[m] += v; }); });
       grupos[g.id || g.calc] = t;
     });
-    return { linhas: linhas, grupos: grupos, fora: fora, entradas: entradas, saidas: saidas };
+    return { linhas: linhas, grupos: grupos, fora: fora, entradas: entradas, saidas: saidas, origem: origem };
   }
 
   function renderDre() {
@@ -2523,8 +2665,8 @@
     renderClassificacaoDre();
   }
 
-  function opcoesLinhaDre(selecionada, sugestao) {
-    var html = '<option value=""' + (!selecionada ? ' selected' : '') + '>Automático: ' + escapeHtml(DRE_NOMES[sugestao]) + '</option>';
+  function opcoesLinhaDre(selecionada, sugestao, rotuloPadrao) {
+    var html = '<option value=""' + (!selecionada ? ' selected' : '') + '>' + (rotuloPadrao || 'Padrão') + ': ' + escapeHtml(DRE_NOMES[sugestao]) + '</option>';
     DRE_GRUPOS.forEach(function (g) {
       if (!g.linhas) return;
       html += '<optgroup label="' + escapeHtml(g.nome) + '">' + g.linhas.filter(function (l) { return !/_nc$/.test(l[0]); }).map(function (l) {
@@ -2535,35 +2677,128 @@
     return html;
   }
 
+  var dreAbertos = {};       // categorias com a lista de fornecedores aberta
+  var dreSoPendentes = false;
+  function somaAno(meses) { return meses.reduce(function (s, v) { return s + v; }, 0); }
+
+  // Itens cuja linha ainda não está gravada na aba DRE_MAPA (categorias e
+  // fornecedores com padrão próprio). Os "a classificar" ficam de fora.
+  function dreItensParaGravar() {
+    var itens = [];
+    dreDados.categorias.forEach(function (c) {
+      if (!dreBuscar(dreMapaN, c.chave)) {
+        var l = dreSugestao(c);
+        if (!/_nc$/.test(l)) itens.push({ chave: c.chave, linha: l });
+      }
+      (c.fornecedores || []).forEach(function (f) {
+        var padraoF = dreBuscar(DRE_PADRAO_N, f.chave);
+        if (padraoF && !/_nc$/.test(padraoF) && !dreBuscar(dreMapaN, f.chave)) itens.push({ chave: f.chave, linha: padraoF });
+      });
+    });
+    return itens;
+  }
+
   function renderClassificacaoDre() {
     var cats = dreDados.categorias.slice().sort(function (a, b) {
       if (a.tipo !== b.tipo) return a.tipo < b.tipo ? -1 : 1;
       return a.categoria.localeCompare(b.categoria, 'pt-BR');
     });
-    var pendentes = 0;
+    var pendentes = 0, valorPendente = 0;
     var linhas = cats.map(function (c) {
-      var manual = dreDados.mapa[c.chave] && DRE_NOMES[dreDados.mapa[c.chave]] ? dreDados.mapa[c.chave] : '';
-      var sug = dreSugestao(c);
-      var efetiva = manual || sug;
-      var pend = /_nc$/.test(efetiva);
-      if (pend) pendentes++;
-      var total = c.meses.reduce(function (s, v) { return s + v; }, 0);
-      return '<tr' + (pend ? ' class="pendente"' : '') + '><td>' + (c.tipo === 'E' ? 'Entrada' : 'Saída') + '</td>' +
-        '<td><b>' + escapeHtml(c.categoria) + '</b></td><td class="r">' + c.qtd + '</td>' +
-        '<td class="val ' + (c.tipo === 'E' ? 'credito' : 'debito') + '">' + fmtMoney(total) + '</td>' +
-        '<td><select data-dre-chave="' + escapeHtml(c.chave) + '">' + opcoesLinhaDre(manual, sug) + '</select>' +
-        (manual ? '' : ' <span class="auto">automático</span>') + '</td></tr>';
+      var naPlanilha = dreBuscar(dreMapaN, c.chave);
+      var efetiva = naPlanilha || dreSugestao(c);
+      var forns = c.fornecedores || [];
+      var fornPend = forns.filter(function (f) { return /_nc$/.test(dreLinhaForn(c, f)); });
+      var pendCat = !forns.length && /_nc$/.test(efetiva);
+      if (pendCat) { pendentes++; valorPendente += somaAno(c.meses); }
+      fornPend.forEach(function (f) { pendentes++; valorPendente += somaAno(f.meses); });
+      if (dreSoPendentes && !pendCat && !fornPend.length) return '';
+      var aberto = dreAbertos[c.chave] !== undefined ? dreAbertos[c.chave] : fornPend.length > 0;
+      var html = '<tr' + (pendCat ? ' class="pendente"' : '') + '><td>' + (c.tipo === 'E' ? 'Entrada' : 'Saída') + '</td>' +
+        '<td><b>' + escapeHtml(c.categoria) + '</b>' +
+        (forns.length > 1 || fornPend.length ? '<br><button type="button" class="btn-chip" data-dre-abrir="' + escapeHtml(c.chave) + '" style="margin-top:4px">' +
+          (aberto ? '▾ ' : '▸ ') + forns.length + ' fornecedor(es)' + (fornPend.length ? ' · ' + fornPend.length + ' a classificar' : '') + '</button>' : '') +
+        '</td><td class="r">' + c.qtd + '</td>' +
+        '<td class="val ' + (c.tipo === 'E' ? 'credito' : 'debito') + '">' + fmtMoney(somaAno(c.meses)) + '</td>' +
+        '<td><select data-dre-chave="' + escapeHtml(c.chave) + '">' + opcoesLinhaDre(naPlanilha, dreSugestao(c), 'Padrão') + '</select>' +
+        ' <span class="auto">' + (naPlanilha ? 'na planilha' : 'padrão, ainda não gravado') + '</span></td></tr>';
+      if (aberto) {
+        forns.slice().sort(function (a, b) { return somaAno(b.meses) - somaAno(a.meses); }).forEach(function (f) {
+          var fPlan = dreBuscar(dreMapaN, f.chave);
+          var fEf = dreLinhaForn(c, f);
+          var pend = /_nc$/.test(fEf);
+          if (dreSoPendentes && !pend) return;
+          var padraoF = dreBuscar(DRE_PADRAO_N, f.chave);
+          html += '<tr class="forn' + (pend ? ' pendente' : '') + '"><td></td><td style="padding-left:22px">↳ ' + escapeHtml(f.nome) + '</td>' +
+            '<td class="r">' + f.qtd + '</td><td class="val debito">' + fmtMoney(somaAno(f.meses)) + '</td>' +
+            '<td><select data-dre-chave="' + escapeHtml(f.chave) + '">' +
+            opcoesLinhaDre(fPlan, dreSugestaoForn(c, f), padraoF ? 'Padrão' : 'Igual à categoria') + '</select>' +
+            (fPlan ? ' <span class="auto">na planilha</span>' : '') + '</td></tr>';
+        });
+      }
+      return html;
     }).join('');
+    var aGravar = dreItensParaGravar();
     document.getElementById('dre-classificacao').innerHTML = '<div class="card dre-class">' +
       '<div class="page-head" style="margin-bottom:10px"><div><div class="eyebrow">Ajuste</div><h1 style="font-size:20px">Classificação das categorias do Revollu</h1></div></div>' +
-      '<p class="muted" style="margin-bottom:10px">Cada categoria do Revollu entra numa linha da DRE. A sugestão automática vem do nome da categoria; ' +
-      'troque quando precisar — fica salvo na planilha (aba oculta DRE_MAPA) e vale para todos os meses e anos.</p>' +
-      (pendentes ? '<div class="banner warn">' + pendentes + ' categoria(s) sem linha definida — estão em "a classificar". Escolha a linha certa abaixo.</div>' : '') +
-      '<div class="table-scroll"><table><thead><tr><th>Tipo</th><th>Categoria no Revollu</th><th class="r">Lanç.</th><th>Total ' + dreDados.ano + '</th><th>Linha da DRE</th></tr></thead><tbody>' +
-      linhas + '</tbody></table></div><span class="muted" id="dre-class-msg"></span></div>';
+      '<p class="muted" style="margin-bottom:10px">Cada categoria do Revollu entra numa linha da DRE. Nas saídas dá para escolher a linha de um fornecedor específico ' +
+      '(abra a lista de fornecedores). Toda escolha feita aqui é gravada na planilha, aba oculta DRE_MAPA, e vale para todos os meses e anos.</p>' +
+      (pendentes ? '<div class="banner warn">' + pendentes + ' item(ns) a classificar, somando ' + fmtMoney(valorPendente) + ' no ano. Estão destacados abaixo; escolha a linha de cada um.</div>' : '<div class="banner info">Tudo classificado.</div>') +
+      '<div class="btn-row" style="margin-bottom:12px">' +
+      '<button type="button" class="btn gold" id="dre-gravar-tudo"' + (aGravar.length ? '' : ' disabled') + '>' +
+        (aGravar.length ? 'Gravar classificação padrão na planilha (' + aGravar.length + ' itens)' : 'Classificação padrão já gravada na planilha') + '</button>' +
+      '<label class="muted" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="dre-so-pend"' + (dreSoPendentes ? ' checked' : '') + '> Mostrar só o que falta classificar</label>' +
+      '<span class="muted" id="dre-class-msg"></span></div>' +
+      '<div class="table-scroll"><table><thead><tr><th>Tipo</th><th>Categoria / fornecedor no Revollu</th><th class="r">Lanç.</th><th>Total ' + dreDados.ano + '</th><th>Linha da DRE</th></tr></thead><tbody>' +
+      linhas + '</tbody></table></div></div>';
+  }
+
+  document.getElementById('dre-classificacao').addEventListener('click', function (ev) {
+    var ab = ev.target.closest('[data-dre-abrir]');
+    if (ab) {
+      var k = ab.getAttribute('data-dre-abrir');
+      var c = dreDados.categorias.filter(function (x) { return x.chave === k; })[0];
+      var atual = dreAbertos[k] !== undefined ? dreAbertos[k]
+        : (c && (c.fornecedores || []).some(function (f) { return /_nc$/.test(dreLinhaForn(c, f)); }));
+      dreAbertos[k] = !atual;
+      renderClassificacaoDre();
+      return;
+    }
+    if (ev.target.id === 'dre-gravar-tudo') gravarClassificacaoPadrao();
+  });
+
+  function gravarClassificacaoPadrao() {
+    var itens = dreItensParaGravar();
+    if (!itens.length) return;
+    var btn = document.getElementById('dre-gravar-tudo');
+    var msg = document.getElementById('dre-class-msg');
+    btn.disabled = true;
+    var partes = [];
+    for (var i = 0; i < itens.length; i += 20) partes.push(itens.slice(i, i + 20));
+    var feitos = 0;
+    // Uma parte por vez (o pedido vai na URL, que tem limite de tamanho).
+    partes.reduce(function (p, parte) {
+      return p.then(function () {
+        if (msg) msg.textContent = 'Gravando ' + (feitos + 1) + '–' + (feitos + parte.length) + ' de ' + itens.length + '…';
+        return chamar('dre_salvar_mapa_lote', { itens: parte }, 30000).then(function (json) {
+          feitos += parte.length;
+          dreDados.mapa = json.mapa || dreDados.mapa;
+          dreAtualizarMapaN();
+        });
+      });
+    }, Promise.resolve()).then(function () {
+      renderDre();
+      var m2 = document.getElementById('dre-class-msg');
+      if (m2) m2.textContent = feitos + ' itens gravados na planilha (aba DRE_MAPA).';
+    }).catch(function (err) {
+      renderDre();
+      var m2 = document.getElementById('dre-class-msg');
+      if (m2) m2.textContent = 'Gravou ' + feitos + ' de ' + itens.length + '. Erro: ' + err.message + ' — clique de novo para continuar.';
+    });
   }
 
   document.getElementById('dre-classificacao').addEventListener('change', function (ev) {
+    if (ev.target.id === 'dre-so-pend') { dreSoPendentes = ev.target.checked; renderClassificacaoDre(); return; }
     var sel = ev.target.closest('select[data-dre-chave]');
     if (!sel) return;
     var chave = sel.getAttribute('data-dre-chave');
@@ -2573,6 +2808,7 @@
     if (msg) msg.textContent = 'Salvando…';
     chamar('dre_salvar_mapa', { chave: chave, linha: linha }, 20000).then(function (json) {
       dreDados.mapa = json.mapa || dreDados.mapa;
+      dreAtualizarMapaN();
       renderDre();
       var m2 = document.getElementById('dre-class-msg');
       if (m2) m2.textContent = 'Salvo.';
@@ -2581,6 +2817,235 @@
       if (msg) msg.textContent = 'Não foi possível salvar: ' + err.message;
     });
   });
+
+  // =====================================================================
+  // PAINEL DA DRE — gráficos (Chart.js) sobre os mesmos números da DRE.
+  // Um eixo por gráfico; cores por papel (receita, despesa, resultado) da
+  // paleta de referência validada; texto sempre na cor de texto.
+  // =====================================================================
+  var CHARTJS_URL = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js';
+  var pnEl = document.getElementById('view-painel');
+  var pnAno = document.getElementById('pn-ano'), pnDe = document.getElementById('pn-de'), pnAte = document.getElementById('pn-ate');
+  var pnMsg = document.getElementById('pn-msg');
+  var pnGraficos = {};
+  var pnSel = { mes: null, grupo: null };
+  var PN_GRUPOS_DESP = [['ded', 'Deduções (Simples, estornos)'], ['cus', 'Custos (apostilas)'], ['pes', 'Pessoal'], ['op', 'Operacionais'], ['fin', 'Financeiro'], ['nop', 'Não operacional']];
+
+  function carregarChartJs() {
+    if (window.Chart) return Promise.resolve(window.Chart);
+    return new Promise(function (resolve, reject) {
+      var s = document.createElement('script');
+      s.src = CHARTJS_URL;
+      s.onload = function () { resolve(window.Chart); };
+      s.onerror = function () { reject(new Error('não consegui carregar a biblioteca de gráficos (verifique a internet)')); };
+      document.head.appendChild(s);
+    });
+  }
+
+  (function () {
+    var hoje = new Date();
+    var anos = [];
+    for (var a = hoje.getFullYear(); a >= hoje.getFullYear() - 2; a--) anos.push('<option>' + a + '</option>');
+    pnAno.innerHTML = anos.join('');
+    var ops = MESES_ROTULO.map(function (n, i) { return '<option value="' + i + '">' + n + '</option>'; }).join('');
+    pnDe.innerHTML = ops; pnAte.innerHTML = ops;
+    pnDe.value = '0'; pnAte.value = String(hoje.getMonth());
+  })();
+
+  function prepararPainel() {
+    if (dreDados && dreDados.ano === Number(pnAno.value)) renderPainel(); else carregarPainel();
+  }
+  function carregarPainel() {
+    var ano = Number(pnAno.value);
+    pnMsg.textContent = 'Buscando dados do Revollu na planilha…';
+    Promise.all([carregarChartJs(), chamar('dre_dados', { ano: ano }, 45000)]).then(function (r) {
+      dreDados = r[1];
+      dreAtualizarMapaN();
+      dreAnoSel.value = String(ano);
+      pnMsg.textContent = '';
+      renderPainel();
+    }).catch(function (err) { pnMsg.textContent = 'Não foi possível carregar: ' + err.message; });
+  }
+  pnAno.addEventListener('change', function () { pnSel.mes = null; pnSel.grupo = null; carregarPainel(); });
+  document.getElementById('pn-atualizar').addEventListener('click', carregarPainel);
+  [pnDe, pnAte].forEach(function (el) {
+    el.addEventListener('change', function () {
+      if (Number(pnDe.value) > Number(pnAte.value)) { if (el === pnDe) pnAte.value = pnDe.value; else pnDe.value = pnAte.value; }
+      pnSel.mes = null; renderPainel();
+    });
+  });
+  document.getElementById('pn-chip').addEventListener('click', function (ev) {
+    if (ev.target.closest('[data-pn-limpar]')) { pnSel.mes = null; pnSel.grupo = null; renderPainel(); }
+  });
+
+  function pnCor(v) { return getComputedStyle(pnEl).getPropertyValue(v).trim(); }
+  function pnAlfa(hex, a) {
+    var h = hex.replace('#', '');
+    return 'rgba(' + parseInt(h.slice(0, 2), 16) + ',' + parseInt(h.slice(2, 4), 16) + ',' + parseInt(h.slice(4, 6), 16) + ',' + a + ')';
+  }
+  function pnMil(v) {
+    var a = Math.abs(v);
+    var t = a >= 1000 ? (a / 1000).toLocaleString('pt-BR', { maximumFractionDigits: a >= 100000 ? 0 : 1 }) + ' mil' : a.toLocaleString('pt-BR', { maximumFractionDigits: 0 });
+    return (v < 0 ? '−' : '') + 'R$ ' + t;
+  }
+  function pnPct(v) { return isFinite(v) ? v.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).replace('-', '−') + '%' : '—'; }
+  function pnSoma(arr, meses) { var t = 0; meses.forEach(function (m) { t += arr[m]; }); return t; }
+  // Ordem das séries: Jardim, Pré, 1º–9º ano, 1º–3º médio, sem série.
+  function pnOrdemSerie(rot) {
+    var t = norm(rot).toLowerCase(), n = Number((t.match(/(\d)/) || [])[1] || 0);
+    if (!n) { var rom = t.match(/\b(i{1,3})\s*$/); n = rom ? rom[1].length : 0; }
+    if (/^sem serie/.test(t)) return 99;
+    if (/jardim/.test(t)) return 10 + n;
+    if (/pre/.test(t)) return 20 + n;
+    if (/e\.?\s*m\.?|medio/.test(t)) return 60 + n;
+    if (/ano/.test(t)) return 30 + n;
+    return 99;
+  }
+
+  function pnBaseOpcoes(fmtValor, horizontal, legenda) {
+    var ink = pnCor('--ink-soft') || getComputedStyle(document.documentElement).getPropertyValue('--ink-soft');
+    var grade = getComputedStyle(document.documentElement).getPropertyValue('--line').trim();
+    var eixoValor = { grid: { color: grade }, border: { display: false }, ticks: { color: ink, maxTicksLimit: horizontal ? 5 : 7, maxRotation: 0, callback: function (v) { return fmtValor(v); } } };
+    var eixoCat = { grid: { display: false }, border: { color: grade }, ticks: { color: ink, autoSkip: false } };
+    return {
+      responsive: true, maintainAspectRatio: false, indexAxis: horizontal ? 'y' : 'x',
+      interaction: { mode: horizontal ? 'nearest' : 'index', intersect: horizontal },
+      plugins: {
+        legend: { display: !!legenda, position: 'top', align: 'start', labels: { color: ink, boxWidth: 12, boxHeight: 12, usePointStyle: true } },
+        tooltip: { callbacks: { label: function (c) { return (c.dataset.label ? c.dataset.label + ': ' : '') + (fmtValor === pnPct ? pnPct(c.parsed[horizontal ? 'x' : 'y']) : fmtMoney(c.parsed[horizontal ? 'x' : 'y'])); } } }
+      },
+      scales: horizontal ? { x: eixoValor, y: eixoCat } : { x: eixoCat, y: eixoValor }
+    };
+  }
+  function pnDesenhar(id, cfg) {
+    if (pnGraficos[id]) pnGraficos[id].destroy();
+    pnGraficos[id] = new window.Chart(document.getElementById(id), cfg);
+  }
+
+  function renderPainel() {
+    var cont = document.getElementById('pn-conteudo');
+    if (!dreDados || !window.Chart) return;
+    if (!dreDados.temRevollu || !dreDados.categorias.length) {
+      cont.hidden = true;
+      pnMsg.textContent = !dreDados.temRevollu ? 'A aba REVOLLU_LANCAMENTOS não existe — na planilha use Revollu ▸ Atualizar ano atual.'
+        : 'Sem lançamentos do Revollu de ' + dreDados.ano + ' na planilha (a aba guarda um ano por vez: Revollu ▸ Atualizar outro ano).';
+      return;
+    }
+    cont.hidden = false;
+    var D = calcularDre();
+    var de = Number(pnDe.value), ate = Number(pnAte.value);
+    var mesesPer = []; for (var m = de; m <= ate; m++) mesesPer.push(m);
+    var foco = pnSel.mes !== null ? [pnSel.mes] : mesesPer;
+    var rotFoco = pnSel.mes !== null ? MESES_ROTULO[pnSel.mes] + '/' + dreDados.ano : MESES_ROTULO[de].slice(0, 3) + '–' + MESES_ROTULO[ate].slice(0, 3).toLowerCase() + '/' + dreDados.ano;
+    var cRec = pnCor('--pn-rec'), cDesp = pnCor('--pn-desp'), cRes = pnCor('--pn-res');
+
+    // Despesas e custos = tudo que sai abaixo da receita bruta (valor positivo).
+    var despMes = []; for (var k = 0; k < 12; k++) {
+      var t = 0; PN_GRUPOS_DESP.forEach(function (g) { t += D.grupos[g[0]][k]; }); despMes.push(-t);
+    }
+    var rec = pnSoma(D.grupos.rb, foco), desp = pnSoma(despMes, foco), res = pnSoma(D.grupos.res, foco);
+    var nMeses = mesesPer.length;
+    var mediaRec = pnSoma(D.grupos.rb, mesesPer) / nMeses, mediaRes = pnSoma(D.grupos.res, mesesPer) / nMeses, mediaDesp = pnSoma(despMes, mesesPer) / nMeses;
+    function compara(v, media) {
+      if (pnSel.mes === null) return 'média mensal ' + pnMil(media);
+      if (!media) return '';
+      var d = (v - media) / Math.abs(media) * 100;
+      return (d >= 0 ? '▲ ' : '▼ ') + pnPct(Math.abs(d)) + ' vs média do período';
+    }
+    document.getElementById('pn-k-rec').textContent = fmtMoney(rec);
+    document.getElementById('pn-k-rec2').textContent = compara(rec, mediaRec);
+    document.getElementById('pn-k-desp').textContent = fmtMoney(desp);
+    document.getElementById('pn-k-desp2').textContent = compara(desp, mediaDesp);
+    document.getElementById('pn-k-res').textContent = fmtMoney(res);
+    document.getElementById('pn-k-res2').textContent = compara(res, mediaRes);
+    document.getElementById('pn-k-mar').textContent = pnPct(rec ? res / rec * 100 : NaN);
+    var marPer = pnSoma(D.grupos.rb, mesesPer) ? pnSoma(D.grupos.res, mesesPer) / pnSoma(D.grupos.rb, mesesPer) * 100 : NaN;
+    document.getElementById('pn-k-mar2').textContent = pnSel.mes === null ? 'resultado ÷ receita bruta' : 'período: ' + pnPct(marPer);
+    document.getElementById('pn-chip').innerHTML = '<span class="pn-chip">Mostrando: ' + escapeHtml(rotFoco) +
+      (pnSel.grupo ? ' · ' + escapeHtml(PN_GRUPOS_DESP.filter(function (g) { return g[0] === pnSel.grupo; })[0][1]) : '') +
+      (pnSel.mes !== null || pnSel.grupo ? ' <button type="button" data-pn-limpar title="Limpar seleção">✕</button>' : '') + '</span>';
+
+    // 1) Receita, despesas e resultado por mês (um eixo, R$).
+    var rotMeses = mesesPer.map(function (m) { return MESES_ROTULO[m].slice(0, 3); });
+    var esmaecer = function (cor) {
+      return mesesPer.map(function (m) { return pnSel.mes === null || pnSel.mes === m ? cor : pnAlfa(cor, 0.28); });
+    };
+    var opMeses = pnBaseOpcoes(pnMil, false, true);
+    opMeses.onClick = function (ev, els) {
+      if (!els.length) return;
+      var m = mesesPer[els[0].index];
+      pnSel.mes = pnSel.mes === m ? null : m;
+      renderPainel();
+    };
+    opMeses.onHover = function (ev, els) { ev.native.target.style.cursor = els.length ? 'pointer' : 'default'; };
+    pnDesenhar('pn-c-meses', { type: 'bar', options: opMeses, data: { labels: rotMeses, datasets: [
+      { type: 'bar', label: 'Receita bruta', data: mesesPer.map(function (m) { return round2(D.grupos.rb[m]); }), backgroundColor: esmaecer(cRec), borderRadius: 4, maxBarThickness: 26, categoryPercentage: 0.7, barPercentage: 0.92, order: 2 },
+      { type: 'bar', label: 'Despesas e custos', data: mesesPer.map(function (m) { return round2(despMes[m]); }), backgroundColor: esmaecer(cDesp), borderRadius: 4, maxBarThickness: 26, categoryPercentage: 0.7, barPercentage: 0.92, order: 2 },
+      { type: 'line', label: 'Resultado líquido', data: mesesPer.map(function (m) { return round2(D.grupos.res[m]); }), borderColor: cRes, backgroundColor: cRes, borderWidth: 2, pointRadius: 4, pointHoverRadius: 6, tension: 0, order: 1 }
+    ] } });
+
+    // 2) Margem líquida por mês (%), linha única com zero marcado.
+    var opMar = pnBaseOpcoes(pnPct, false, false);
+    opMar.scales.y.grid.color = function (c) { return c.tick.value === 0 ? getComputedStyle(document.documentElement).getPropertyValue('--ink-soft') : getComputedStyle(document.documentElement).getPropertyValue('--line'); };
+    pnDesenhar('pn-c-margem', { type: 'line', options: opMar, data: { labels: rotMeses, datasets: [
+      { label: 'Margem líquida', data: mesesPer.map(function (m) { return D.grupos.rb[m] ? round2(D.grupos.res[m] / D.grupos.rb[m] * 100) : null; }),
+        borderColor: cRes, backgroundColor: cRes, borderWidth: 2, tension: 0,
+        pointRadius: mesesPer.map(function (m) { return pnSel.mes === m ? 7 : 4; }), pointHoverRadius: 7 }
+    ] } });
+
+    // 3) Para onde vai o dinheiro: saídas por grupo (clique filtra o gráfico 4).
+    var grupos = PN_GRUPOS_DESP.map(function (g) { return { id: g[0], nome: g[1], v: Math.max(0, -pnSoma(D.grupos[g[0]], foco)) }; })
+      .filter(function (g) { return g.v > 0.004; }).sort(function (a, b) { return b.v - a.v; });
+    var opGr = pnBaseOpcoes(pnMil, true, false);
+    opGr.onClick = function (ev, els) {
+      if (!els.length) return;
+      var id = grupos[els[0].index].id;
+      pnSel.grupo = pnSel.grupo === id ? null : id;
+      renderPainel();
+    };
+    opGr.onHover = function (ev, els) { ev.native.target.style.cursor = els.length ? 'pointer' : 'default'; };
+    pnDesenhar('pn-c-grupos', { type: 'bar', options: opGr, data: { labels: grupos.map(function (g) { return g.nome; }), datasets: [
+      { label: 'Saídas', data: grupos.map(function (g) { return round2(g.v); }),
+        backgroundColor: grupos.map(function (g) { return !pnSel.grupo || pnSel.grupo === g.id ? cDesp : pnAlfa(cDesp, 0.28); }), borderRadius: 4, maxBarThickness: 26 }
+    ] } });
+
+    // 4) Maiores despesas (linhas da DRE), do grupo escolhido ou de todos.
+    var linhasDesp = [];
+    DRE_GRUPOS.forEach(function (g) {
+      if (!g.linhas || !PN_GRUPOS_DESP.some(function (x) { return x[0] === g.id; })) return;
+      if (pnSel.grupo && g.id !== pnSel.grupo) return;
+      g.linhas.forEach(function (l) { var v = -pnSoma(D.linhas[l[0]], foco); if (v > 0.004) linhasDesp.push({ nome: l[1], v: v }); });
+    });
+    linhasDesp.sort(function (a, b) { return b.v - a.v; });
+    linhasDesp = linhasDesp.slice(0, 10);
+    document.getElementById('pn-t-top').textContent = pnSel.grupo ? 'Maiores despesas — ' + PN_GRUPOS_DESP.filter(function (g) { return g[0] === pnSel.grupo; })[0][1] : 'Maiores despesas';
+    pnDesenhar('pn-c-top', { type: 'bar', options: pnBaseOpcoes(pnMil, true, false), data: { labels: linhasDesp.map(function (l) { return l.nome; }), datasets: [
+      { label: 'Saídas', data: linhasDesp.map(function (l) { return round2(l.v); }), backgroundColor: cDesp, borderRadius: 4, maxBarThickness: 22 }
+    ] } });
+
+    // 5) Receita por tipo (linhas de receita bruta).
+    var recTipos = DRE_GRUPOS[0].linhas.map(function (l) { return { nome: l[1], v: pnSoma(D.linhas[l[0]], foco) }; })
+      .filter(function (l) { return Math.abs(l.v) > 0.004; }).sort(function (a, b) { return b.v - a.v; });
+    pnDesenhar('pn-c-tipo', { type: 'bar', options: pnBaseOpcoes(pnMil, true, false), data: { labels: recTipos.map(function (l) { return l.nome; }), datasets: [
+      { label: 'Entradas', data: recTipos.map(function (l) { return round2(l.v); }), backgroundColor: cRec, borderRadius: 4, maxBarThickness: 26 }
+    ] } });
+
+    // 6) Mensalidades por série (categorias de entrada que caem em Mensalidades).
+    var series = {};
+    dreDados.categorias.forEach(function (c) {
+      if (c.tipo !== 'E' || dreLinhaDe(c) !== 'rec_mensalidade') return;
+      var rot = /^\(\+\)/.test(c.categoria) || !/\d|jardim|pr[eé]/i.test(c.categoria) ? 'Sem série informada' : c.categoria.replace(/^mensalidade\s*/i, '');
+      series[rot] = (series[rot] || 0) + pnSoma(c.meses, foco);
+    });
+    var serieLista = Object.keys(series).map(function (k) { return { nome: k, v: series[k] }; })
+      .filter(function (s) { return s.v > 0.004; }).sort(function (a, b) { return pnOrdemSerie(a.nome) - pnOrdemSerie(b.nome); });
+    pnDesenhar('pn-c-serie', { type: 'bar', options: pnBaseOpcoes(pnMil, false, false), data: { labels: serieLista.map(function (s) { return s.nome; }), datasets: [
+      { label: 'Mensalidades', data: serieLista.map(function (s) { return round2(s.v); }), backgroundColor: cRec, borderRadius: 4, maxBarThickness: 34 }
+    ] } });
+
+    document.getElementById('pn-fonte').textContent = 'Fonte: Revollu (aba REVOLLU_LANCAMENTOS) · ' + (dreDados.atualizadoEm || '') +
+      ' · regime de caixa · mesma classificação da tela DRE Mensal.';
+  }
 
   // =====================================================================
   // CONCILIAÇÃO BANCÁRIA
