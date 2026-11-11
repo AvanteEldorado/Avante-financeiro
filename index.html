@@ -451,7 +451,8 @@
   .pin-overlay[hidden] { display: none; }
   .pin-box { width: min(380px, 100%); background: var(--paper-raised); border-radius: 18px; padding: 28px; box-shadow: var(--shadow); display: grid; gap: 14px; text-align: center; }
   .pin-box img { width: 72px; height: 72px; border-radius: 14px; margin: 0 auto; object-fit: cover; }
-  .pin-box input#pin-input { text-align: center; font-family: "IBM Plex Mono", monospace; font-size: 22px; letter-spacing: 0.4em; }
+  .pin-box .field[hidden] { display: none; }
+  .pin-box input#pin-input:not(:placeholder-shown) { font-family: "IBM Plex Mono", monospace; letter-spacing: 0.25em; }
 
   /* Filtros / barras */
   .filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; align-items: end; }
@@ -571,14 +572,10 @@
   <form class="pin-box" id="pin-form" autocomplete="off">
     <img id="pin-logo" alt="Logo AVANTE">
     <h2 style="font-size:19px">Portal Financeiro AVANTE</h2>
-    <p class="muted" id="pin-msg" style="margin:0">Escolha seu usuário e digite sua senha.</p>
+    <p class="muted" id="pin-msg" style="margin:0">Escolha seu nome e digite sua senha.</p>
     <div class="field" id="pin-user-field" style="text-align:left">
       <label for="pin-user">Usuário</label>
       <select id="pin-user"></select>
-    </div>
-    <div class="field" id="pin-nome-field" style="text-align:left" hidden>
-      <label for="pin-nome">Seu nome</label>
-      <input id="pin-nome" placeholder="Ex.: Antônia" maxlength="40">
     </div>
     <div class="field" id="pin-pin-field" style="text-align:left">
       <label for="pin-input">Senha</label>
@@ -2008,15 +2005,17 @@
       }
       document.getElementById('pin-user-field').hidden = loginModoAberto;
       document.getElementById('pin-pin-field').hidden = loginModoAberto;
-      document.getElementById('pin-nome-field').hidden = !loginModoAberto;
-      document.getElementById('pin-user').innerHTML = lista.map(function (n) {
-        return '<option' + (n === memoria.usuario ? ' selected' : '') + '>' + escapeHtml(n) + '</option>';
-      }).join('');
-      document.getElementById('pin-nome').value = memoria.usuario;
+      document.getElementById('pin-btn').disabled = loginModoAberto;
+      var conhecido = lista.indexOf(memoria.usuario) >= 0;
+      document.getElementById('pin-user').innerHTML =
+        '<option value=""' + (conhecido ? '' : ' selected') + ' disabled>Escolha seu nome…</option>' +
+        lista.map(function (n) {
+          return '<option' + (n === memoria.usuario ? ' selected' : '') + '>' + escapeHtml(n) + '</option>';
+        }).join('');
       document.getElementById('pin-msg').textContent = loginModoAberto
-        ? 'Nenhum usuário cadastrado ainda. Informe seu nome — ele fica registrado nas conferências.'
-        : 'Escolha seu usuário e digite sua senha.';
-      setTimeout(function () { document.getElementById(loginModoAberto ? 'pin-nome' : 'pin-input').focus(); }, 50);
+        ? 'Nenhum usuário cadastrado. Cadastre pela planilha (menu AVANTE › Cadastrar usuário).'
+        : 'Escolha seu nome e digite sua senha.';
+      setTimeout(function () { document.getElementById(conhecido ? 'pin-input' : 'pin-user').focus(); }, 50);
     }).catch(function (err) {
       document.getElementById('pin-msg').textContent = 'Sem conexão com a planilha: ' + err.message;
     });
@@ -2025,14 +2024,7 @@
   document.getElementById('pin-form').addEventListener('submit', function (ev) {
     ev.preventDefault();
     var erroEl = document.getElementById('pin-erro');
-    if (loginModoAberto) {
-      var nome = document.getElementById('pin-nome').value.trim();
-      if (!nome) { erroEl.textContent = 'Informe seu nome.'; return; }
-      memoria.usuario = nome; gravarLocal('avante_usuario', nome);
-      pinOverlay.hidden = true;
-      refreshFromServer(false);
-      return;
-    }
+    if (loginModoAberto) return;
     var usuario = document.getElementById('pin-user').value;
     var senha = document.getElementById('pin-input').value;
     if (!usuario) { erroEl.textContent = 'Escolha o usuário.'; return; }
